@@ -1838,6 +1838,11 @@ def solve_mod_equations(*args):
     return functools.reduce(lambda res, div: solve_mod_equation(res, div), args)
 
 
+def alphabet(lower=True):
+    res = ''.join((chr(i) for i in range(65, 91)))
+    return res.lower() if lower else res
+
+
 # alternative names for divisor functions
 phi = totient
 sigma = sum_fctrs
