@@ -600,9 +600,9 @@ def fibonacci(n):
     where the Fibonacci sequence is ```f_0 = 0, f_1 = 1, f_2 = 1, f_3 = 2, ...```
     (sum of previous two terms)"""
     assert n > 0, "The Fibonacci numbers are not defined for negative indices."
-    fibGen = fibonacci_gen()
+    fib_gen = fibonacci_gen()
     for _ in range(n+1):
-        x = next(fibGen)
+        x = next(fib_gen)
     return x
 
 
@@ -654,31 +654,32 @@ def average_list(lst):
 def choose_from_hist(hist):
     """weighted pseudorandom choice from a dictionary that maps keys to their "weight"""
     items = []
-    csumList = []
-    freqSum = 0
+    csum_list = []
+    freq_sum = 0
     for key, val in hist.items():
         items.append(key)
-        freqSum += val
-        csumList.append(freqSum)
-    num = random.randint(1, csumList[-1])
-    index = bisect.bisect_right(csumList, num)-1
+        freq_sum += val
+        csum_list.append(freq_sum)
+    num = random.randint(1, csum_list[-1])
+    index = bisect.bisect_right(csum_list, num)-1
     return items[index]
 
 
 def rom_to_int(numeral):
     """converts Roman numerals to integers"""
-    numDict = {'M': 1000, 'D': 500, 'C': 100, 'L': 50, 'X': 10, 'V': 5, 'I': 1}
+    num_dict = {'M': 1000, 'D': 500, 'C': 100,
+                'L': 50, 'X': 10, 'V': 5, 'I': 1}
     val = 0
     i = 0
     while i in range(len(numeral)):
         try:
-            if numDict[numeral[i]] < numDict[numeral[i+1]]:
-                val += numDict[numeral[i+1]]-numDict[numeral[i]]
+            if num_dict[numeral[i]] < num_dict[numeral[i+1]]:
+                val += num_dict[numeral[i+1]]-num_dict[numeral[i]]
                 i += 1
             else:
-                val += numDict[numeral[i]]
+                val += num_dict[numeral[i]]
         except IndexError:
-            val += numDict[numeral[i]]
+            val += num_dict[numeral[i]]
         i += 1
     return val
 
@@ -697,10 +698,13 @@ def sum_squares(n):
 
 
 def sum_num(start, stop, step=1):
-    """returns the sum of an arithmetic sequence, from ```start``` to ```stop```
-    (inclusive), stepping by ```step```"""
-    numTerms = (stop - start)//step + 1
-    return (start+stop)*numTerms/2
+    """Returns the sum of an arithmetic sequence, from ```start``` to ```stop```
+    (inclusive), stepping by ```step```.
+
+    Equivalent to ```sum(range(start, stop, step))``` \
+    (but works better on large inputs)."""
+    num_terms = (stop - start)//step + 1
+    return (start+stop)*num_terms/2
 
 
 def sum_cubes(n):
@@ -956,9 +960,9 @@ def months(numbers=True):
 # # date input
 # finished = False
 # while not finished:
-#     dateIn = input("Enter date in format mm/dd/yyyy time(24h,e.g. 12:37) timezone(e.g. +0100, -0800, etc.): ")
+#     date_in = input("Enter date in format mm/dd/yyyy time(24h,e.g. 12:37) timezone(e.g. +0100, -0800, etc.): ")
 #
-#     lst = re.split('/| |:',dateIn)
+#     lst = re.split('/| |:',date_in)
 #     mo,dy,yr,hr,mnt,tzh,tzm = int(lst[0]),int(lst[1]),int(lst[2]),int(lst[3]),int(lst[4]),lst[5][:3],int(lst[5][0]+'1')*int(lst[5][3:])
 #     hr,mnt = divmod((hr-int(tzh))*60+mnt-int(tzm),60)
 #
@@ -985,10 +989,10 @@ def sum_fctrs(n):
     return int(res)
 
 
-def flatten_gen(nestIn):
+def flatten_gen(obj):
     """flatten a nested object containing lists and/or tuples
     (generator function that yields each element one by one; see also ```flatten```)"""
-    nest = copy.deepcopy(nestIn)
+    nest = copy.deepcopy(obj)
 
     while nest:
         ele = nest.pop(0)
@@ -1097,11 +1101,11 @@ def pattern_sort(lst, pattern, key=None, reverse=False):
     pattern: the pattern to sort with
     (list of numbers, i.e. ```[2, 1, 0]``` would swap the 2th element with the 0th element) \\
     key: sorting key to sort initially before sorting using the pattern (function) \\
-    reverse: whether to sort backwards during initial so    rt (bool)
+    reverse: whether to sort backwards during initial sort (bool)
     """
     lst.sort(key=key, reverse=reverse)
-    zipList = zip(lst, pattern)
-    return [ele for ele, _ in sorted(zipList, key=lambda x: x[1])]
+    zip_list = zip(lst, pattern)
+    return [ele for ele, _ in sorted(zip_list, key=lambda x: x[1])]
 
 
 def angle_to_comp(n, deg=False):
@@ -1123,16 +1127,16 @@ def rotate_comp(z, rot, deg=False):
     return z * angle_to_comp(rot, deg)
 
 
-def string_to_linked(s, splitChars=['→', '-->']):
+def string_to_linked(s, split_chars=['→', '-->']):
     """Reads a string and converts it to a linked list.
 
     s: string \\
-    splitChars: list of characters to split at
+    split_chars: list of characters to split at
 
     Returns: linked list node"""
     s += '--> None' if 'None' not in s else ''
     s = s.replace(' ', '')
-    lst = re.split('|'.join(splitChars), s)
+    lst = re.split('|'.join(split_chars), s)
     return list_to_linked(lst)
 
 
@@ -1174,40 +1178,37 @@ def look_and_say(n):
         while i in range(len(s)):
             count = 1
             num = s[i]
-            try:
-                while s[i] == s[i+1]:
-                    count += 1
-                    i += 1
-            except IndexError:
-                pass
+            while i in range(len(s)-1) and s[i] == s[i+1]:
+                count += 1
+                i += 1
             res += str(count) + num
             i += 1
         return int(res)
 
 
-def alt_case(string, lowerFirst=True):
+def alt_case(string, lower_first=True):
     """Returns the string with alternating upper and lowercase characters.
 
-    lowerFirst: if True, first character is lowercase; if False, first character is uppercase"""
+    lower_first: if True, first character is lowercase; if False, first character is uppercase"""
     string = string.lower()
     for i in range(len(string)):
-        if bool(i % 2) == lowerFirst:
+        if bool(i % 2) == lower_first:
             string = string[:i] + string[i].upper() + string[i+1:]
     return string
 
 
-def sort_alpha(n):
+def sort_alpha(lst):
     """Sorts a list of integers in abecedarian (alphabetical) order."""
     engine = inflect.engine()
     res = []
-    for num in n:
+    for num in lst:
         word = engine.number_to_words(num)
         res.append((word, num))
     res.sort()
     return [ele for _, ele in res]
 
 
-def dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_commas=False, tab_braces=True, comma_braces=True, beginIndent=0):
+def dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_commas=False, tab_braces=True, comma_braces=True, begin_indent=0):
     """Returns a human-readable string representation of a dictionary (or defaultdict).
 
     use_repr: if ```True```, will use ```repr(key)``` and ```repr(val)``` instead of ```str(key)``` and ```str(val)``` \\
@@ -1217,7 +1218,7 @@ def dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_comma
     use_commas: if ```True```, will use commas when formatting \\
     tab_braces: if ```True```, items inside braces will not be on the same indentation level as the braces \\
     comma_braces: if ```True```, will use commas after closing braces \\
-    beginIndent: level of indentation applied to first level; for example, if ```beginIndent=1```, then
+    begin_indent: level of indentation applied to first level; for example, if ```begin_indent=1```, then
     the entire dictionary will be indented by 1 from the left
     """
     def _dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_commas=False, tab_braces=True, comma_braces=True, begin_indent=0):
@@ -1226,37 +1227,37 @@ def dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_comma
         def represent(s):
             return repr(s) if use_repr else str(s)
 
-        commaChar = ',' if use_commas and len(d.values())-1 else ''
+        comma_char = ',' if use_commas and len(d.values())-1 else ''
 
-        sp = ' '*indent*(beginIndent+(tab_braces and use_braces))
+        sp = ' '*indent*(begin_indent+(tab_braces and use_braces))
 
         res = ''
         if use_braces:
-            res += ' '*indent*beginIndent + '{' + '\n'
+            res += ' '*indent*begin_indent + '{' + '\n'
 
         i = 1
         for key, val in d.items():
             if len(d) == i:
-                commaChar = ''
+                comma_char = ''
             if type(val) not in dict_types() or not deep:
                 res += sp + represent(key) + ': ' + \
-                    represent(val) + commaChar + '\n'
+                    represent(val) + comma_char + '\n'
             else:
                 res += sp + represent(key) + ':' + '\n' + \
                     _dict_neat(val, use_repr, deep, indent,
-                               use_braces, use_commas, tab_braces, comma_braces, beginIndent+1) + '\n'
+                               use_braces, use_commas, tab_braces, comma_braces, begin_indent+1) + '\n'
                 if use_braces:
-                    res = res[:-1] + commaChar + res[-1]
+                    res = res[:-1] + comma_char + res[-1]
             i += 1
 
         if use_braces:
             ending_brace = '}' + ','*comma_braces
-            res += ' '*indent*beginIndent + ending_brace + '\n'
+            res += ' '*indent*begin_indent + ending_brace + '\n'
 
         return res[:-1]
 
     res = _dict_neat(d, use_repr, deep, indent,
-                     use_braces, use_commas, tab_braces, comma_braces, beginIndent)
+                     use_braces, use_commas, tab_braces, comma_braces, begin_indent)
     if not use_braces:
         comma_braces = False
     return res[:-1] if comma_braces else res
@@ -1273,24 +1274,24 @@ def convert_color(col, typ=str):
     if type(col) == str:
         if col[0] == '#':
             col = col[1:]
-        colNum = to_decimal(col, 16)
+        col_num = to_decimal(col, 16)
     elif type(col) == tuple:
-        colNum = 256**2*col[0] + 256*col[1] + col[2]
+        col_num = 256**2*col[0] + 256*col[1] + col[2]
     elif type(col) != int:
         raise TypeError("col should be of type 'str', 'tuple' or 'int'.")
 
     if typ == str:
-        return '#'+convert_base_list(from_decimal(colNum, 16))
+        return '#'+convert_base_list(from_decimal(col_num, 16))
     elif typ == tuple:
-        return tuple(from_decimal(colNum, 256))
+        return tuple(from_decimal(col_num, 256))
     elif typ != int:
         raise TypeError("typ should be of type 'str', 'tuple' or 'int'.")
 
 
 def rand_color(start=0, stop=256**3-1):
     """Picks a random color from the inclusive range [start, stop]."""
-    colNum = random.randint(start, stop)
-    return '#'+convert_base_list(from_decimal(colNum, 16)).zfill(6)
+    col_num = random.randint(start, stop)
+    return '#'+convert_base_list(from_decimal(col_num, 16)).zfill(6)
 
 
 def opp_color(col):
@@ -1303,19 +1304,19 @@ def opp_color(col):
     if type(col) == str:
         if col[0] == '#':
             col = col[1:]
-        colNum = to_decimal(col, 16)
+        col_num = to_decimal(col, 16)
     elif type(col) == tuple:
-        colNum = 256**2*col[0] + 256*col[1] + col[2]
+        col_num = 256**2*col[0] + 256*col[1] + col[2]
     elif type(col) != int:
         raise TypeError("col should be of type 'str', 'tuple' or 'int'.")
 
     assert 0 <= col < 255**3, "Color out of range."
 
-    oppColNum = 256**3 - colNum - 1
-    return '#'+str(convert_base_list(from_decimal(oppColNum, 16))).zfill(6)
+    opp_col_num = 256**3 - col_num - 1
+    return '#'+str(convert_base_list(from_decimal(opp_col_num, 16))).zfill(6)
 
 
-def turtle_gif(func, args, kwargs, fps=10, fname=None, path=None, tempFileName=None, tempPath=None, optimize=False, duration=100, tr=None):
+def turtle_gif(func, args, kwargs, fps=10, fname=None, path=None, temp_fname=None, temp_path=None, optimize=False, duration=100, tr=None):
     """Saves a gif of a turtle function.
 
     func: turtle function \\
@@ -1325,40 +1326,40 @@ def turtle_gif(func, args, kwargs, fps=10, fname=None, path=None, tempFileName=N
     fps: frames per second \\
     fname: filename for the gif \\
     path: where to save the gif \\
-    tempFileName: turtle_gif saves multiple .eps images, then deletes them later;
-    tempFileName can be used to make sure turtle_gif doesn't overwrite any existing files \\
-    tempPath: where to save the temporary multiple images \\
+    temp_fname: turtle_gif saves multiple .eps images, then deletes them later;
+    temp_fname can be used to make sure turtle_gif doesn't overwrite any existing files \\
+    temp_path: where to save the temporary multiple images \\
     optimize, duration: passed when creating the gif, like so:
-        imList[0].save(path+fname, save_all=True, append_images=imList[1:],
+        frames[0].save(path+fname, save_all=True, append_images=frames[1:],
         optimize=optimize, duration=duration, loop=0) \\
     tr: Turtle object
     """
     if tr == None:
         tr = turtle.Turtle()
 
-    funcName = func.__name__
+    func_name = func.__name__
     if fname == None:
-        fname = funcName
-    if tempFileName == None:
-        tempFileName = fname
+        fname = func_name
+    if temp_fname == None:
+        temp_fname = fname
 
     if path == None:
         path = os.getcwd()
 
-    if tempPath == None:
-        tempPath = os.getcwd()
+    if temp_path == None:
+        temp_path = os.getcwd()
 
-    path, tempPath = format_input_path(path), format_input_path(tempPath)
+    path, temp_path = format_input_path(path), format_input_path(temp_path)
 
     running = True  # bool for whether program is running
     counter = 1  # the number for the temp file name
-    imList = []  # list of images
+    frames = []  # list of images
 
     def save():
         nonlocal counter
-        fileStr = "%s%d.eps" % (tempPath + tempFileName, counter)  # file name
-        tr.getcanvas().postscript(file=fileStr)  # save the file
-        imList.append(fileStr)
+        file_str = "%s%d.eps" % (temp_path + temp_fname, counter)  # file name
+        tr.getcanvas().postscript(file=file_str)  # save the file
+        frames.append(file_str)
 
         if running:
             # save the screen again after a set time
@@ -1372,14 +1373,14 @@ def turtle_gif(func, args, kwargs, fps=10, fname=None, path=None, tempFileName=N
 
     running = False
 
-    for i in range(len(imList)):
-        im = imList[i]
-        imList[i] = Image.open(im)
+    for i in range(len(frames)):
+        im = frames[i]
+        frames[i] = Image.open(im)
 
         os.remove(im)
 
-    imList[0].save(path+fname+'.gif', save_all=True,
-                   append_images=imList[1:], optimize=optimize, duration=duration, loop=0)
+    frames[0].save(path+fname+'.gif', save_all=True,
+                   append_images=frames[1:], optimize=optimize, duration=duration, loop=0)
 
 
 def format_input_path(path):
@@ -1625,11 +1626,11 @@ def factors(n):
 def totatives(n):
     """All numbers less than n coprime to n."""
     res = set()
-    checkNum = totient(n)
+    mx = totient(n)
     for i in range(n):
         if math.gcd(i, n) == 1:
             res.add(i)
-        if len(res) == checkNum:
+        if len(res) == mx:
             return res
 
 
