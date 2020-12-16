@@ -1,15 +1,15 @@
-import math
-import random
 import bisect
 import copy
-import inflect
-import re
-import os
-import turtle
-from collections import defaultdict, UserDict
-from PIL import Image
 import functools
 import itertools
+import math
+import os
+import random
+import re
+import turtle
+from collections import UserDict, defaultdict
+import inflect
+from PIL import Image
 
 
 class LinkedList:
@@ -319,7 +319,8 @@ class Point:
                 x = complex(*x)
             self.point = complex(x)
         else:
-            "Incorrect constructor type(s) for 'Point' object."
+            raise TypeError(
+                "Incorrect constructor type(s) for 'Point' object. Use a complex number, two ints, or a tuple.")
 
     def __mul__(self, val):
         assert type(val) in {type(self)} | num_types()
@@ -340,16 +341,19 @@ class Point:
         return self.__class__(*xy_tup(self.point*val))
 
     def __add__(self, val):
-        assert type(val) in {type(self)} | num_types()
-        if type(val) == type(self):
-            val = complex(val)
-        return self.__class__(*xy_tup(self.point+val))
+        return self.__class__(self.point+val)
 
     def __radd__(self, val):
-        assert type(val) in {type(self)} | num_types()
-        if type(val) == type(self):
-            val = complex(val)
-        return self.__class__(*xy_tup(self.point+val))
+        return self + val
+
+    def __sub__(self, val):
+        return self.__class__(self.point-val)
+
+    def __rsub__(self, val):
+        return -self + val
+
+    def __neg__(self):
+        return self.__class__(-self.point)
 
     def __abs__(self):
         return abs(self.point)
@@ -531,16 +535,10 @@ class Line:
     def __iter__(self):
         return self[0], self[1]
 
-    @property
-    def equation(self):
-        slope, y_int = self.slope(), self.y_int()
-
-        def func(x):
-            if slope is None:
-                return
-            return slope*x+y_int
-
-        return func
+    def equation(self, x):
+        if slope is None:
+            return
+        return slope*x+y_int
 
     def on(self, p):
         """Returns whether p is on the line."""
@@ -564,13 +562,89 @@ class Line:
         if tr is None:
             tr = turtle.Turtle()
 
-        start = tr.pos()
+        orig = tr.pos()
         tr.pu()
         tr.goto(self.start)
         tr.pd()
         tr.goto(self.stop)
         tr.pu()
-        tr.goto(start)
+        tr.goto(orig)
+
+
+class Color:
+    def __init__(self, constructor=0):
+        if type(constructor) == int:
+            if constructor not in range(256**3):
+                raise ValueError(
+                    'Colors are between 0 and 256**3-1 (which equals 16777215), inclusive. %d is not in that range.'
+                    % constructor)
+            self.color = constructor
+        elif type(constructor) == str:
+            constructor = constructor.lstrip('#')
+            self.color = int(constructor, 16)
+        elif type(constructor) == tuple:
+            for val in constructor:
+                if val not in range(256):
+                    raise ValueError(
+                        'RGB values are between 0 and 255, inclusive. %d is not in that range.'
+                        % val)
+            self.color = constructor[0]*256**2 + \
+                constructor[1]*256 + constructor[2]
+        elif type(constructor) == type(self):
+            self.color = constructor.color
+        else:
+            raise TypeError("The constructor should be an int, str, or tuple, not a(n) '%s'."
+                            % type(constructor).__name__)
+
+    def __int__(self):
+        return self.color
+
+    def __add__(self, other):
+        return self.__class__(self.color + int(self.__class__(other)))
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        return self.__class__(self.color - int(self.__class__(other)))
+
+    def __rsub__(self, other):
+        return self.__class__(self.__class__(other) - self)
+
+    def __str__(self):
+        return 'Color(%d, %d, %d)' % tuple(self)
+
+    def __iter__(self):
+        res = from_decimal(self.color, 256)
+        while len(res) < 3:
+            res = [0] + res
+        return iter(res)
+
+    def hex(self):
+        return '#' + ''.join(
+            (str(ele) for ele in convert_base_list(from_decimal(self.color, 16)))
+        ).zfill(6)  
+
+    @property
+    def red(self):
+        return self.color//(256**2)
+
+    @property
+    def green(self):
+        return (self.color//256) % 256
+
+    @property
+    def blue(self):
+        return self.color % 256
+
+    def opposite(self):
+        return Color(256**3-1 - self.color)
+
+    def swatch(self, dimensions):
+        """Returns an image filled with the color.
+
+        dimensions: a tuple (width, height)."""
+        return Image.new('RGB', dimensions, self.hex())
 
 
 def convert_point_input(string, sep=' '):
@@ -1263,57 +1337,9 @@ def dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_comma
     return res[:-1] if comma_braces else res
 
 
-def convert_color(col, typ=str):
-    """Converts from one representation of a color to another representation.
-
-    col: should be a string (hex code, e.g. '#cc1420' or 'cc1420'),
-    tuple (RGB tuple, e.g. (204, 20, 32)), or integer (decimal representation of the
-    hex code, e.g. #cc1420 --> 13374496) \\
-    typ: type to convert to (either 'tuple', 'str', or 'int')
-    """
-    if type(col) == str:
-        if col[0] == '#':
-            col = col[1:]
-        col_num = to_decimal(col, 16)
-    elif type(col) == tuple:
-        col_num = 256**2*col[0] + 256*col[1] + col[2]
-    elif type(col) != int:
-        raise TypeError("col should be of type 'str', 'tuple' or 'int'.")
-
-    if typ == str:
-        return '#'+convert_base_list(from_decimal(col_num, 16))
-    elif typ == tuple:
-        return tuple(from_decimal(col_num, 256))
-    elif typ != int:
-        raise TypeError("typ should be of type 'str', 'tuple' or 'int'.")
-
-
 def rand_color(start=0, stop=256**3-1):
     """Picks a random color from the inclusive range [start, stop]."""
-    col_num = random.randint(start, stop)
-    return '#'+convert_base_list(from_decimal(col_num, 16)).zfill(6)
-
-
-def opp_color(col):
-    """Returns the opposite color of ```col```. ```col``` should be a string, integer, or tuple.
-
-    if string: should be a valid hex code, e.g. '#cc1420' or 'cc1420'\\
-    if integer: should be the decimal value of a hex code, e.g. the hexadecimal number
-    # cc1420 becomes ```13374496``` \\
-    if tuple: should be an RGB pair, e.g. ```(204, 20, 32)```"""
-    if type(col) == str:
-        if col[0] == '#':
-            col = col[1:]
-        col_num = to_decimal(col, 16)
-    elif type(col) == tuple:
-        col_num = 256**2*col[0] + 256*col[1] + col[2]
-    elif type(col) != int:
-        raise TypeError("col should be of type 'str', 'tuple' or 'int'.")
-
-    assert 0 <= col < 255**3, "Color out of range."
-
-    opp_col_num = 256**3 - col_num - 1
-    return '#'+str(convert_base_list(from_decimal(opp_col_num, 16))).zfill(6)
+    return Color(random.randint(start, stop))
 
 
 def turtle_gif(func, args, kwargs, fps=10, fname=None, path=None, temp_fname=None, temp_path=None, optimize=False, duration=100, tr=None):
