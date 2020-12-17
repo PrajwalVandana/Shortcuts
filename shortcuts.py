@@ -938,8 +938,6 @@ def dist(p1, p2):
     """
     dist(p1, p2): distance between two points \\
     dist(p, line) OR dist(line, p): distance between point and line
-
-    Line segments are given as a tuple of its endpoints (which are themselves (x, y) tuples).
     """
     types = set(map(type, (p1, p2)))
     if types <= point_types() | Point:
