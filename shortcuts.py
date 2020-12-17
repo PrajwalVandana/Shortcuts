@@ -470,12 +470,15 @@ class Point:
             if quad == 4:
                 return 360 - math.degrees(math.acos(norm.x))
 
+    def polar(self):
+        return abs(self), self.angle()
+
 
 class Line:
     """Represents a line segment in the Cartesian plane."""
 
     def __init__(self, p1, p2):
-        """Note that Line(start, stop) == Line(stop, start); start automatically
+        """Note that ```Line(start, stop)``` == ```Line(stop, start)```; ```start``` automatically
         becomes the endpoint with lowest x-coord."""
 
         if type(p1) not in {Point} | point_types():
@@ -492,7 +495,8 @@ class Line:
         self.stop = lst[1]
 
     def angle(self):
-        """Angle Line(a, b) (with b.y > a.y) makes with Line(a, x) such that Line(a, x) is parallel to the x-axis."""
+        """Angle ```Line(a, b)``` (with b.y > a.y) makes with ```Line(a, x)``` \
+        such that ```Line(a, x)``` is parallel to the x-axis."""
         slope = self.slope()
         if slope != None:
             ang = math.degrees(math.atan(slope))
@@ -503,7 +507,7 @@ class Line:
             return 90
 
     def slope(self):
-        """Returns slope, None means undefined slope."""
+        """Returns slope, ```None``` means undefined slope."""
         if self.start.x == self.stop.x:
             return None
         return (self.stop[1]-self.start[1])/(self.stop[0]-self.start[0])
@@ -521,7 +525,7 @@ class Line:
             return self.start
         else:
             raise IndexError(
-                "Index for type 'Line' must be 0 or 1, not '%s'." % str(i))
+                "Index for a Line object must be 0 or 1, not '%s'." % str(i))
 
     def __setitem__(self, i, val):
         if i == 1:
@@ -530,7 +534,7 @@ class Line:
             self.start += val
         else:
             raise IndexError(
-                "Index for type 'Line' must be 0 or 1, not '%s'." % str(i))
+                "Index for a Line object must be 0 or 1, not '%s'." % str(i))
 
     def __iter__(self):
         return self[0], self[1]
@@ -541,7 +545,7 @@ class Line:
         return slope*x+y_int
 
     def on(self, p):
-        """Returns whether p is on the line."""
+        """Returns whether ```p``` is on the line."""
         if type(p) == complex:
             p = xy_tup(p)
         if self.slope() != None:
@@ -623,7 +627,7 @@ class Color:
     def hex(self):
         return '#' + ''.join(
             (str(ele) for ele in convert_base_list(from_decimal(self.color, 16)))
-        ).zfill(6)  
+        ).zfill(6)
 
     @property
     def red(self):
@@ -1868,6 +1872,19 @@ def alphabet(lower=True):
     res = ''.join((chr(i) for i in range(65, 91)))
     return res.lower() if lower else res
 
+
+def weighted_random_choice(choice_info):
+    x = list(choice_info.items())
+
+    num = random.random()
+
+    csum = 0
+    i = 0
+    while csum < num:
+        csum += x[i][1]
+        i += 1
+
+    return x[i-1][0]
 
 # alternative names for divisor functions
 phi = totient
