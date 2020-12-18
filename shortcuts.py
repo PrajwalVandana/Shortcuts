@@ -584,33 +584,38 @@ class Color:
                     % constructor)
             self.color = constructor
         elif type(constructor) == str:
-            constructor = constructor.lstrip('#')
-            self.color = int(constructor, 16)
+            self.color = int(constructor.lstrip('#'), 16)
         elif type(constructor) == tuple:
             for val in constructor:
-                if val not in range(256):
+                if type(val) != int:
                     raise ValueError(
-                        'RGB values are between 0 and 255, inclusive. %d is not in that range.'
-                        % val)
+                        "RGB tuples should contain integers, not '%s's."
+                    % type(val).__name__)
+                    if val not in range(256):
+                        raise ValueError(
+                            'RGB values are between 0 and 255, inclusive. %s is not in that range.'
+                            % str(val))
             self.color = constructor[0]*256**2 + \
                 constructor[1]*256 + constructor[2]
         elif type(constructor) == type(self):
             self.color = constructor.color
         else:
-            raise TypeError("The constructor should be an int, str, or tuple, not a(n) '%s'."
-                            % type(constructor).__name__)
+            raise TypeError("The constructor should be an int, str, tuple, or %s, not a(n) '%s'."
+                            % (type(self).__name__, type(constructor).__name__))
 
     def __int__(self):
         return self.color
 
     def __add__(self, other):
-        return self.__class__(self.color + int(self.__class__(other)))
+        other = self.__class__(other)
+        return self.__class__(((self.red + other.red)//2, (self.green + other.green)//2, (self.blue + other.blue)//2))
 
     def __radd__(self, other):
         return self + other
 
     def __sub__(self, other):
-        return self.__class__(self.color - int(self.__class__(other)))
+        other = self.__class__(other)
+        return self.__class__(((self.red - other.red//2)*2, (self.green - other.green//2)*2, (self.blue - other.blue//2)*2))
 
     def __rsub__(self, other):
         return self.__class__(self.__class__(other) - self)
@@ -644,7 +649,7 @@ class Color:
     def opposite(self):
         return Color(256**3-1 - self.color)
 
-    def swatch(self, dimensions):
+    def swatch(self, dimensions=(100, 100)):
         """Returns an image filled with the color.
 
         dimensions: a tuple (width, height)."""
@@ -1883,6 +1888,7 @@ def weighted_random_choice(choice_info):
         i += 1
 
     return x[i-1][0]
+
 
 # alternative names for divisor functions
 phi = totient
