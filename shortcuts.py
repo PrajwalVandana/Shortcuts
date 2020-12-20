@@ -529,15 +529,15 @@ class Line:
 
     def __setitem__(self, i, val):
         if i == 1:
-            self.stop += val
+            self.stop = val
         elif i == 0:
-            self.start += val
+            self.start = val
         else:
             raise IndexError(
                 "Index for a Line object must be 0 or 1, not '%s'." % str(i))
 
     def __iter__(self):
-        return self[0], self[1]
+        return iter(self[0], self[1])
 
     def equation(self, x):
         if slope is None:
@@ -573,87 +573,6 @@ class Line:
         tr.goto(self.stop)
         tr.pu()
         tr.goto(orig)
-
-
-class Color:
-    def __init__(self, constructor=0):
-        if type(constructor) == int:
-            if constructor not in range(256**3):
-                raise ValueError(
-                    'Colors are between 0 and 256**3-1 (which equals 16777215), inclusive. %d is not in that range.'
-                    % constructor)
-            self.color = constructor
-        elif type(constructor) == str:
-            self.color = int(constructor.lstrip('#'), 16)
-        elif type(constructor) == tuple:
-            for val in constructor:
-                if type(val) != int:
-                    raise ValueError(
-                        "RGB tuples should contain integers, not '%s's."
-                    % type(val).__name__)
-                    if val not in range(256):
-                        raise ValueError(
-                            'RGB values are between 0 and 255, inclusive. %s is not in that range.'
-                            % str(val))
-            self.color = constructor[0]*256**2 + \
-                constructor[1]*256 + constructor[2]
-        elif type(constructor) == type(self):
-            self.color = constructor.color
-        else:
-            raise TypeError("The constructor should be an int, str, tuple, or %s, not a(n) '%s'."
-                            % (type(self).__name__, type(constructor).__name__))
-
-    def __int__(self):
-        return self.color
-
-    def __add__(self, other):
-        other = self.__class__(other)
-        return self.__class__(((self.red + other.red)//2, (self.green + other.green)//2, (self.blue + other.blue)//2))
-
-    def __radd__(self, other):
-        return self + other
-
-    def __sub__(self, other):
-        other = self.__class__(other)
-        return self.__class__(((self.red - other.red//2)*2, (self.green - other.green//2)*2, (self.blue - other.blue//2)*2))
-
-    def __rsub__(self, other):
-        return self.__class__(self.__class__(other) - self)
-
-    def __str__(self):
-        return 'Color(%d, %d, %d)' % tuple(self)
-
-    def __iter__(self):
-        res = from_decimal(self.color, 256)
-        while len(res) < 3:
-            res = [0] + res
-        return iter(res)
-
-    def hex(self):
-        return '#' + ''.join(
-            (str(ele) for ele in convert_base_list(from_decimal(self.color, 16)))
-        ).zfill(6)
-
-    @property
-    def red(self):
-        return self.color//(256**2)
-
-    @property
-    def green(self):
-        return (self.color//256) % 256
-
-    @property
-    def blue(self):
-        return self.color % 256
-
-    def opposite(self):
-        return Color(256**3-1 - self.color)
-
-    def swatch(self, dimensions=(100, 100)):
-        """Returns an image filled with the color.
-
-        dimensions: a tuple (width, height)."""
-        return Image.new('RGB', dimensions, self.hex())
 
 
 def convert_point_input(string, sep=' '):
@@ -1274,7 +1193,7 @@ def alt_case(string, lower_first=True):
     string = string.lower()
     for i in range(len(string)):
         if bool(i % 2) == lower_first:
-            string = string[:i] + string[i].upper() + string[i+1:]
+            string = string[: i] + string[i].upper() + string[i+1:]
     return string
 
 
