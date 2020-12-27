@@ -7,7 +7,8 @@ import os
 import random
 import re
 import turtle
-from collections import UserDict, defaultdict
+from collections import UserDict, defaultdict, Counter
+
 import inflect
 from PIL import Image
 
@@ -601,7 +602,7 @@ def fibonacci(n):
     """returns the nth Fibonacci number,
     where the Fibonacci sequence is ```f_0 = 0, f_1 = 1, f_2 = 1, f_3 = 2, ...```
     (sum of previous two terms)"""
-    assert n > 0, "The Fibonacci numbers are not defined for negative indices."
+    assert n >= 0, "The Fibonacci numbers are not defined for negative indices."
     fib_gen = fibonacci_gen()
     for _ in range(n+1):
         x = next(fib_gen)
@@ -610,7 +611,7 @@ def fibonacci(n):
 
 def digital_sum(n):
     """returns the sum of the digits of an integer"""
-    assert type(n) == int, "Digital sum is defined for integers only."
+    assert isinstance(n, int), "Digital sum is defined for integers only."
     return sum([int(digit) for digit in str(n)])
 
 
@@ -695,7 +696,7 @@ def tri_area(a, b, c):
 
 def sum_squares(n):
     """returns the sum of the first n squares"""
-    assert type(n) == int, 'Argument to sum_squares must be an integer.'
+    assert isinstance(n, int), 'Argument to sum_squares must be an integer.'
     return int((n*(n+1)*(2*n+1))//6)
 
 
@@ -711,7 +712,7 @@ def sum_num(start, stop, step=1):
 
 def sum_cubes(n):
     """returns the sum of the first n cubes"""
-    assert type(n) == int, '\'n\' must be an integer.'
+    assert isinstance(n, int), '\'n\' must be an integer.'
     return int(sum_num(1, n)**2)
 
 
@@ -810,7 +811,7 @@ def prime_fctr(n):
 
     Uses the (6k+-1) algorithm; all primes > 3 are of the form 6k+-1,
     since 2 divides (6k+0), (6k+2), (6k+4), and 3 divides (6k+3)."""
-    assert type(n) == int, "Can only factorize integers."
+    assert isinstance(n, int), "Can only factorize integers."
 
     # can't prime factorize nonpositive integers
     if n <= 0:
@@ -865,26 +866,26 @@ def dist(p1, p2):
     """
     types = set(map(type, (p1, p2)))
     if types <= point_types() | Point:
-        if type(p1) == tuple:
+        if isinstance(p1, tuple):
             p1 = complex(*p1)
         else:
             p1 = complex(p1)
-        if type(p2) == tuple:
+        if isinstance(p2, tuple):
             p2 = complex(*p2)
         else:
             p2 = complex(p2)
         x1, y1, x2, y2 = xy_tup(p1)+xy_tup(p2)
         return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
     else:
-        if type(p1) == Line:
-            if type(p2) == tuple:
+        if isinstance(p1, Line):
+            if isinstance(p2, tuple):
                 p2 = complex(*p2)
             else:
                 p2 = complex(p2)
             p = Point(*xy_tup(p2))
             line = p1
-        elif type(p2) == Line:
-            if type(p1) == tuple:
+        elif isinstance(p2, Line):
+            if isinstance(p1, tuple):
                 p1 = complex(*p1)
             else:
                 p1 = complex(p1)
@@ -1005,10 +1006,7 @@ def flatten_gen(obj):
 
 def flatten(nest):
     """flatten a nested object containing lists and/or tuples"""
-    if type(nest) == list:
-        return list(flatten_gen(nest))
-    else:
-        return tuple(flatten_gen(nest))
+    return nest.__class__(flatten_gen(nest))
 
 
 def find_def_class(obj, method):
@@ -1020,7 +1018,7 @@ def find_def_class(obj, method):
 
 def lcm(lst, *args):
     """lcm of a list using ```lcm2```. Also gathers any arguments and adds them to the list."""
-    if type(lst) == int:
+    if isinstance(lst, int):
         lst = [lst]
     lst += list(args)
     res = functools.reduce(lambda x, y: x*y//math.gcd(x, y), lst)
@@ -1029,7 +1027,7 @@ def lcm(lst, *args):
 
 def gcd(lst, *args):
     """gcd of a list using the ```math``` module's ```gcd``` function. Also gathers any arguments and adds them to the list."""
-    if type(lst) == int:
+    if isinstance(lst, int):
         lst = [lst]
     lst += list(args)
     res = functools.reduce(math.gcd, lst)
@@ -1265,7 +1263,12 @@ def dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_comma
 
 def rand_color(start=0, stop=256**3-1):
     """Picks a random color from the inclusive range [start, stop]."""
-    return Color(random.randint(start, stop))
+    return convert_color(random.randint(start, stop), tuple)
+
+
+def opp_color(col):
+    col = convert_color(col, int)
+    return convert_color(256**3-1 - col, tuple)
 
 
 def turtle_gif(func, args, kwargs, fps=10, fname=None, path=None, temp_fname=None, temp_path=None, optimize=False, duration=100, tr=None):
@@ -1624,7 +1627,7 @@ def sum_of_factorial(n, used=None):
     If there is no such set, returns ```None```.
 
     used: if not ```None```, is a set containing that cannot be in the final result"""
-    assert type(n) == int and n > 0, "n must be a positive integer."
+    assert isinstance(n, int) and n > 0, "n must be a positive integer."
 
     finished = False
     num, fctrl = 1, 1
@@ -1662,8 +1665,8 @@ def mat_neat(mat):
     """Neat representation of a 2D matrix."""
     res = ''
     for row in mat:
-        res += str(row)+'\n'
-    return res[:-1]
+        res += ' ' + repr(row) + ',\n'
+    return '[' + res[1:-2] + ']'
 
 
 def powerset(s, as_set=False):
@@ -1695,7 +1698,7 @@ def sum_palindromes(n, leading_zeros=False):
 
     leading_zeros: if ```True```, 037...730 is a valid palindrome (for example)
     """
-    assert type(n) == int and n > 0, 'n must be a positive integer.'
+    assert isinstance(n, int) and n > 0, 'n must be a positive integer.'
 
     if n == 1:
         return 45  # sum of 1 through 9
@@ -1739,7 +1742,7 @@ def point_types():
 
 def dict_types():
     """Dictionary-like types."""
-    return {dict, defaultdict, DefaultArgDict}
+    return {dict, defaultdict, DefaultArgDict, Counter, UserDict}
 
 
 def column(matrix, col):
@@ -1807,6 +1810,74 @@ def weighted_random_choice(choice_info):
         i += 1
 
     return x[i-1][0]
+
+
+def neighbors(mat, r, c, diagonals=True):
+    res = []
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            if (diagonals or not(i and j)) and r+i in range(len(mat)) and c+j in range(len(mat[0])) and (i or j):
+                res.append(mat[r+i][c+j])
+
+    return res
+
+
+def rotate(mat, deg):
+    res = copy(mat)
+    size = len(mat)
+    if deg == 90:
+        res = rotate(mat, 180)
+        res = rotate(res, 270)
+    elif deg == 180:
+        res = reflect(mat, 'x')
+        res = reflect(res, 'y')
+    elif deg == 270:
+        for r in range(size):
+            for c in range(size):
+                res[c][r] = mat[r][-1-c]
+    elif deg == 0:
+        return mat
+    else:
+        raise ValueError('Angle must be 0, 90, 270, or 360.')
+
+    return res
+
+
+def reflect(mat, axis):
+    if axis == 'x':
+        return mat[::-1]
+    elif axis == 'y':
+        res = []
+        for row in mat:
+            res.append(row[::-1])
+    else:
+        raise ValueError("Axis must be 'x' or 'y'.")
+
+    return res
+
+
+def convert_color(col_in, mode=tuple):
+    if type(col_in) == tuple:
+        col = 256**2*col_in[0] + 256*col_in[1] + col_in[2]
+    elif type(col_in) == str:
+        col_in = col_in.lstrip('#')
+        col_in = int(col_in[:2], 16), int(col_in[2:4], 16), int(col_in[4:], 16)
+        col = 256**2*int(col_in[0]) + 256*int(col_in[1]) + int(col_in[2])
+    elif type(col_in) == int:
+        col = col_in
+    else:
+        raise TypeError("Colors must be tuples, strings, or integers, not '%s'."
+                        % type(col_in).__name__)
+
+    if mode == tuple:
+        return col//(256**2), col//256 % 256, col % 256
+    elif mode == str:
+        return '#'+convert_base_list(from_decimal(col, 256))
+    elif mode == int:
+        return col
+    else:
+        raise TypeError("Colors must be tuples, strings, or integers, not '%s'."
+                        % type(col_in).__name__)
 
 
 # alternative names for divisor functions
