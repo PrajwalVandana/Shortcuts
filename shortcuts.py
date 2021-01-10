@@ -588,25 +588,12 @@ def convert_point_input(string, sep=' '):
     return lst
 
 
-def fibonacci_gen():
-    """generator function for the Fibonacci sequence, where
-    the Fibonacci sequence is ```f_0 = 0, f_1 = 1, f_2 = 1, f_3 = 2, ...```"""
-    prev = 1
-    total = 0
-    while True:
-        yield total
-        total, prev = total+prev, total
-
-
 def fibonacci(n):
     """returns the nth Fibonacci number,
-    where the Fibonacci sequence is ```f_0 = 0, f_1 = 1, f_2 = 1, f_3 = 2, ...```
+    where the Fibonacci sequence is ```F0 = 0, F1 = 1, F2 = 1, F3 = 2, ...```
     (sum of previous two terms)"""
-    assert n >= 0, "The Fibonacci numbers are not defined for negative indices."
-    fib_gen = fibonacci_gen()
-    for _ in range(n+1):
-        x = next(fib_gen)
-    return x
+    phi = (1 + math.sqrt(5))/2
+    return (phi**n - (1-phi)**n)/math.sqrt(5)
 
 
 def digital_sum(n):
@@ -1880,7 +1867,9 @@ def convert_color(col_in, mode=tuple):
                         % type(col_in).__name__)
 
 
-# alternative names for divisor functions
-phi = totient
-sigma = sum_fctrs
-tau = num_fctrs
+def lucas(n):
+    """returns the nth Lucas number,
+    where the Lucas sequence is ```L0 = 2, L1 = 1, L2 = 3, L3 = 4, ...```
+    (sum of previous two terms)"""
+    phi = (1 + math.sqrt(5))/2
+    return phi**n + (1-phi)**n
