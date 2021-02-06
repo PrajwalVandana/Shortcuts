@@ -14,10 +14,22 @@ from PIL import Image
 
 
 class LinkedList:
-    def __init__(self, val, next=None):
+    def __init__(self, constructor, nxt=None):
         """Initializes a linked list."""
-        self.val = val
-        self.next = next
+        if isinstance(constructor, (list, tuple)):
+            if constructor[-1] != None:
+                constructor.append(None)
+
+            node = None
+            for i in range(len(constructor)-1, 0, -1):
+                node = LinkedList(constructor[i-1], node)
+            self.val, self.next = node.val, node.next
+        elif type(constructor) == int:
+            self.val = constructor
+            self.next = nxt
+        else:
+            raise TypeError(
+                "Invalid constructor type '%s' for LinkedList: must be a list/tuple-like object or an int.")
 
     def __repr__(self):
         """Returns a string representation of the linked list."""
@@ -43,6 +55,20 @@ class LinkedList:
             node = node.next
         res.append(None)
         yield from res
+
+    def list_to_linked(lst):
+        """Reads a list and converts it to a linked list in order.
+
+        lst: list
+
+        Returns: linked list node"""
+        if lst[-1] != None:
+            lst.append(None)
+
+        prev = None
+        for i in range(len(lst)-1, 0, -1):
+            prev = LinkedList(lst[i-1], prev)
+        return prev
 
 
 class Tree:
@@ -102,11 +128,10 @@ class Network:
         if type(constructor) == list:
             for tup in constructor:
                 self.paths[tup[0]] = self.paths.get(tup[0], []) + [tup[1]]
-        elif type(constructor) == dict:
+        elif isinstance(constructor, dict):
             self.paths = constructor
         else:
-            raise TypeError('Constructor for a %s object cannot be type %s.' %
-                            repr(type(constructor).__name__))
+            raise TypeError("Constructor for a %s object cannot be type %s." % (self.__class__, repr(type(constructor).__name__)))
 
     def __contains__(self, val):
         """The expression ```path in network``` will evaluate to ```True``` if there is a path from the first
@@ -114,16 +139,16 @@ class Network:
 
         The expression ```int in network``` will evaluate to ```True``` if that node exists."""
         if type(val) == int:
-            return val in self.paths()
+            return val in self.paths
         elif type(val) == tuple:
-            return path[1] in self.paths.get(path[0], [])
+            return val[1] in self.paths.get(val[0], [])
         else:
             raise TypeError("Invalid type for 'in' with %s." %
                             repr(type(val).__name__))
 
     def path_list(self):
         """Returns a list of all paths as tuples in the form ```(start, stop)```."""
-        res = []
+        res=[]
         for start, stops in self.paths.items():
             res += [(start, stop) for stop in stops]
         return res
@@ -157,24 +182,24 @@ class Network:
         tr: Turtle object
         """
         if tr == None:
-            tr = turtle.Turtle()
+            tr=turtle.Turtle()
 
-        paths = sorted(self.paths.items())
+        paths=sorted(self.paths.items())
         if node_positions == None:  # adding node positions
-            node_positions = {}
+            node_positions={}
             for i in range(len(paths)):
-                ang = math.radians(90 - (360/len(self.paths))*i)
-                node_positions[paths[i][0]] = r * \
+                ang=math.radians(90 - (360/len(self.paths))*i)
+                node_positions[paths[i][0]]=r * \
                     Point(math.cos(ang), math.sin(ang))
         else:  # converting all node positions to Point objects
             for node, pos in node_positions.items():
-                typ = type(pos)
+                typ=type(pos)
                 if typ not in {Point} | point_types():
                     raise TypeError(
                         "'%s' is not a valid type for a point." % typ.__name__)
-                node_positions[node] = Point(pos)
+                node_positions[node]=Point(pos)
 
-        drawn_lines = set()  # contains lines that are already drawn, to avoid drawing over
+        drawn_lines=set()  # contains lines that are already drawn, to avoid drawing over
         for node, pos in node_positions.items():
             tr.pu()
             tr.goto(pos)
@@ -185,7 +210,7 @@ class Network:
 
             if labeling:  # labeling the nodes
                 if labels is None:
-                    labels = {node: str(node) for node in self.paths}
+                    labels={node: str(node) for node in self.paths}
                 tr.pu()
                 tr.goto(label_relpos(pos))
                 tr.write(labels[node], font=label_font)
@@ -194,8 +219,8 @@ class Network:
 
             # drawing the paths
             for stop in self.paths[node]:
-                stop_pos = node_positions[stop]
-                line = Line(pos, stop_pos)
+                stop_pos=node_positions[stop]
+                line=Line(pos, stop_pos)
 
                 if line not in drawn_lines:
                     drawn_lines.add(line)
@@ -204,10 +229,10 @@ class Network:
                 # stamp the direction of the path
                 tr.pu()
                 tr.goto(line.midpoint())
-                cur_heading = tr.heading()
+                cur_heading=tr.heading()
                 tr.setheading(line.angle() + 180*(line.start != pos))
                 tr.fd(r/15)
-                cur_shape = tr.shape()
+                cur_shape=tr.shape()
                 tr.shape('classic')
                 tr.stamp()
                 tr.shape(cur_shape)
@@ -220,31 +245,31 @@ class Network:
         if n2 in self.paths[n1]:
             return [[n1, n2]]
 
-        res = []
-        cur_len = float('inf')
+        res=[]
+        cur_len=float('inf')
         for i in self.paths[n1]:
             if n1 not in self.paths[i]:
                 for path in self.shortest_paths(i, n2):
-                    if len(path) == cur_len:
+                    if len(path) == cur_len-1:
                         res.append([n1] + path)
-                    elif len(path) < cur_len:
-                        res = [[n1] + path]
-                        cur_len = len(path)
+                    elif len(path) < cur_len-1:
+                        res=[[n1] + path]
+                        cur_len=len(path)+1
             else:
                 for j in self.paths[i]:
                     if n2 == j:
                         res.append([n1, i, n2])
-                        cur_len = 3
+                        cur_len=3
                         break
                     if n1 != j:
                         for path in self.shortest_paths(j, n2):
-                            if len(path) == cur_len:
+                            if len(path) == cur_len-2:
                                 res.append([n1, i] + path)
-                            elif len(path) < cur_len:
-                                res = [[n1, i] + path]
-                                cur_len = len(path)
+                            elif len(path) < cur_len-2:
+                                res=[[n1, i] + path]
+                                cur_len=len(path)+2
 
-            return res
+        return res
 
 
 class DefaultArgDict(UserDict):
@@ -252,11 +277,11 @@ class DefaultArgDict(UserDict):
     takes the index as an argument."""
 
     def __init__(self, default_factory=lambda *args: None):
-        self.default_factory = default_factory
-        self.data = {}
+        self.default_factory=default_factory
+        self.data={}
 
     def __missing__(self, i):
-        self.data[i] = self.default_factory(i)
+        self.data[i]=self.default_factory(i)
         return self.data[i]
 
 
@@ -269,7 +294,7 @@ class Tag:
     """
 
     def __init__(self):
-        self.mapping = defaultdict(list)
+        self.mapping=defaultdict(list)
 
     def __call__(self, *tags):
         def tag_decorator(func):
@@ -286,10 +311,10 @@ class FuncWithString:
     """
 
     def __init__(self, name, func):
-        self.name = name
-        self.func = func
-        self.__name__ = self.func.__name__
-        self.__doc__ = self.func.__doc__
+        self.name=name
+        self.func=func
+        self.__name__=self.func.__name__
+        self.__doc__=self.func.__doc__
 
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
@@ -310,15 +335,15 @@ class Point:
     """Represents a point in the Cartesian plane."""
 
     def __init__(self, x=0, y=0):
-        types = num_types()
+        types=num_types()
         types.remove(complex)
 
         if {type(x), type(y)} <= types:
-            self.point = complex(x, y)
+            self.point=complex(x, y)
         elif type(x) in {type(self)} | point_types():
             if type(x) == tuple:
-                x = complex(*x)
-            self.point = complex(x)
+                x=complex(*x)
+            self.point=complex(x)
         else:
             raise TypeError(
                 "Incorrect constructor type(s) for 'Point' object. Use a complex number, two ints, or a tuple.")
@@ -326,19 +351,19 @@ class Point:
     def __mul__(self, val):
         assert type(val) in {type(self)} | num_types()
         if type(val) == type(self):
-            val = complex(val)
+            val=complex(val)
         return self.__class__(*xy_tup(self.point*val))
 
     def __truediv__(self, val):
         assert type(val) in {type(self)} | num_types()
         if type(val) == type(self):
-            val = complex(val)
+            val=complex(val)
         return self.__class__(*xy_tup(self.point/val))
 
     def __rmul__(self, val):
         assert type(val) in {type(self)} | num_types()
         if type(val) == type(self):
-            val = complex(val)
+            val=complex(val)
         return self.__class__(*xy_tup(self.point*val))
 
     def __add__(self, val):
@@ -368,33 +393,33 @@ class Point:
     def __lt__(self, other):
         assert type(other) in {type(self)} | point_types()
         if type(other) == tuple:
-            other = complex(*other)
+            other=complex(*other)
         return abs(self) < abs(other)
 
     def __le__(self, other):
         assert type(other) in {type(self)} | point_types()
         if type(other) == tuple:
-            other = complex(*other)
+            other=complex(*other)
         return abs(self) <= abs(other)
 
     def __gt__(self, other):
         assert type(other) in {type(self)} | point_types()
         if type(other) == tuple:
-            other = complex(*other)
+            other=complex(*other)
         return abs(self) > abs(other)
 
     def __ge__(self, other):
         assert type(other) in {type(self)} | point_types()
         if type(other) == tuple:
-            other = complex(*other)
+            other=complex(*other)
         return abs(self) >= abs(other)
 
     def __eq__(self, other):
         assert type(other) in {type(self)} | point_types()
         if type(other) == tuple:
-            other = complex(*other)
-        if type(other) == type(self):
-            other = complex(other)
+            other=complex(*other)
+        elif type(other) == type(self):
+            other=complex(other)
         return other == complex(self)
 
     def __str__(self):
@@ -415,19 +440,21 @@ class Point:
             raise IndexError(
                 "Index for type 'Point' must be 0 or 1, not '%s'." % str(i))
 
-    @property
+    @ property
     def x(self):
         return self.point.real
 
-    @property
+    @ property
     def y(self):
         return self.point.imag
 
-    def normalized(self):
+    def normal(self):
+        """Normalized point (same direction, magnitude of 1)."""
         return normalized(self)
 
     def quadrants(self):
-        poss = {1, 2, 3, 4}
+        """Returns which quadrant(s) the point is in."""
+        poss={1, 2, 3, 4}
 
         if self.y > 0:
             poss.discard(3)
@@ -448,8 +475,8 @@ class Point:
     def angle(self):
         """Angle the point makes at the intersection of the line to the origin and
         the positive x-axis (going counterclockwise from the positive x-axis)."""
-        quads = self.quadrants()
-        norm = self.normalized()
+        quads=self.quadrants()
+        norm=self.normal()
 
         if len(quads) > 1:
             if quads == {1, 2}:
@@ -461,7 +488,7 @@ class Point:
             if quads == {1, 4}:
                 return 0
         else:
-            quad = quads.pop()
+            quad=quads.pop()
             if quad == 1:
                 return math.degrees(math.asin(norm.y))
             if quad == 2:
@@ -472,7 +499,18 @@ class Point:
                 return 360 - math.degrees(math.acos(norm.x))
 
     def polar(self):
+        """Returns the polar form of the point."""
         return abs(self), self.angle()
+
+    def dot(self, other):
+        """Returns the dot product of two points."""
+        other=Point(other)
+        return self.x*other.x + self.y*other.y
+
+    def projection(self, other):
+        """Returns the projection of ```other``` onto the point."""
+        other=Point(other)
+        return self*self.dot(other)/abs(self)**2
 
 
 class Line:
@@ -487,20 +525,20 @@ class Line:
         elif type(p2) not in {Point} | point_types():
             raise TypeError("Type '%s' not a valid point." % type(p2).__name__)
 
-        p1 = Point(p1)
-        p2 = Point(p2)
+        p1=Point(p1)
+        p2=Point(p2)
 
-        lst = sorted([p1, p2], key=lambda p: (p.x, p.y))
+        lst=sorted([p1, p2], key=lambda p: (p.x, p.y))
 
-        self.start = lst[0]
-        self.stop = lst[1]
+        self.start=lst[0]
+        self.stop=lst[1]
 
     def angle(self):
         """Angle ```Line(a, b)``` (with b.y > a.y) makes with ```Line(a, x)``` \
         such that ```Line(a, x)``` is parallel to the x-axis."""
-        slope = self.slope()
+        slope=self.slope()
         if slope != None:
-            ang = math.degrees(math.atan(slope))
+            ang=math.degrees(math.atan(slope))
             if ang < 0:
                 ang += 180
             return ang
@@ -530,9 +568,9 @@ class Line:
 
     def __setitem__(self, i, val):
         if i == 1:
-            self.stop = val
+            self.stop=val
         elif i == 0:
-            self.start = val
+            self.start=val
         else:
             raise IndexError(
                 "Index for a Line object must be 0 or 1, not '%s'." % str(i))
@@ -548,7 +586,7 @@ class Line:
     def on(self, p):
         """Returns whether ```p``` is on the line."""
         if type(p) == complex:
-            p = xy_tup(p)
+            p=xy_tup(p)
         if self.slope() != None:
             return self.equation(p[0]) == p[1] and self.start[0] < p[0] < self.stop[0]
         else:
@@ -565,9 +603,9 @@ class Line:
 
     def draw(self, tr=None):
         if tr is None:
-            tr = turtle.Turtle()
+            tr=turtle.Turtle()
 
-        orig = tr.pos()
+        orig=tr.pos()
         tr.pu()
         tr.goto(self.start)
         tr.pd()
@@ -580,11 +618,11 @@ def convert_point_input(string, sep=' '):
     """converts separated coordinate points, e.g. (1,2) to a list of tuples
 
     sep: character separating each set of points"""
-    lst = string.split(sep)
+    lst=string.split(sep)
     for i in range(len(lst)):
-        tup = tuple(lst[i].split(','))
-        res = float(tup[0][1:]), float(tup[1][:-1])
-        lst[i] = res
+        tup=tuple(lst[i].split(','))
+        res=float(tup[0][1:]), float(tup[1][:-1])
+        lst[i]=res
     return lst
 
 
@@ -592,7 +630,7 @@ def fibonacci(n):
     """returns the nth Fibonacci number,
     where the Fibonacci sequence is ```F0 = 0, F1 = 1, F2 = 1, F3 = 2, ...```
     (sum of previous two terms)"""
-    phi = (1 + math.sqrt(5))/2
+    phi=(1 + math.sqrt(5))/2
     return (phi**n - (1-phi)**n)/math.sqrt(5)
 
 
@@ -604,28 +642,28 @@ def digital_sum(n):
 
 def collapsed_digital_sum(num):
     """returns the recursive (collapsed) digital sum of a number"""
-    res = num
+    res=num
     while res > 9:
-        res = digital_sum(res)
+        res=digital_sum(res)
     return res
 
 
 def invert_dict(d):
     """inverts a dictionary (keys become values, values become keys)"""
-    res = {}
+    res={}
     for key in d:
-        res[d[key]] = key
+        res[d[key]]=key
     return res
 
 
 def is_balanced_parentheses(string):
     """returns whether parantheses are balanced"""
-    par = '()'
+    par='()'
     for i in range(len(string)):
         if string[i] not in par:
-            string = string[:i] + '%' + string[i+1:]
-    s = string.replace('%', '')
-    count = 0
+            string=string[:i] + '%' + string[i+1:]
+    s=string.replace('%', '')
+    count=0
     for i in range(len(s)):
         if s[i] == '(':
             count += 1
@@ -643,24 +681,24 @@ def average_list(lst):
 
 def choose_from_hist(hist):
     """weighted pseudorandom choice from a dictionary that maps keys to their "weight"""
-    items = []
-    csum_list = []
-    freq_sum = 0
+    items=[]
+    csum_list=[]
+    freq_sum=0
     for key, val in hist.items():
         items.append(key)
         freq_sum += val
         csum_list.append(freq_sum)
-    num = random.randint(1, csum_list[-1])
-    index = bisect.bisect_right(csum_list, num)-1
+    num=random.randint(1, csum_list[-1])
+    index=bisect.bisect_right(csum_list, num)-1
     return items[index]
 
 
 def rom_to_int(numeral):
     """converts Roman numerals to integers"""
-    num_dict = {'M': 1000, 'D': 500, 'C': 100,
+    num_dict={'M': 1000, 'D': 500, 'C': 100,
                 'L': 50, 'X': 10, 'V': 5, 'I': 1}
-    val = 0
-    i = 0
+    val=0
+    i=0
     while i in range(len(numeral)):
         try:
             if num_dict[numeral[i]] < num_dict[numeral[i+1]]:
@@ -677,7 +715,7 @@ def rom_to_int(numeral):
 def tri_area(a, b, c):
     """computes the area of a triangle given its side lengths using Heron's formula:
     https://en.wikipedia.org/wiki/Heron%27s_formula"""
-    s = (a+b+c)/2
+    s=(a+b+c)/2
     return math.sqrt(s*(s-a)*(s-b)*(s-c))
 
 
@@ -693,7 +731,7 @@ def sum_num(start, stop, step=1):
 
     Equivalent to ```sum(range(start, stop, step))``` \
     (but works better on large inputs)."""
-    num_terms = (stop - start)//step + 1
+    num_terms=(stop - start)//step + 1
     return (start+stop)*num_terms/2
 
 
@@ -713,18 +751,18 @@ def median(lst, floor=True):
     if len(lst) % 2:
         return lst[(len(lst)-1)//2]
     else:
-        sl = len(lst)//2
+        sl=len(lst)//2
         return lst[sl-1] if floor else average_list(lst[sl-1:sl+1])
 
 
 def atbash(msg):
     """encrypts a message using Atbash (flip the alphabet, so 'a' becomes 'z', 'b' becomes 'y', etc.)"""
     for i in range(len(msg)):
-        x = ord(msg[i])
+        x=ord(msg[i])
         if x in range(97, 123):
-            msg = msg[:i]+chr(219-x)+msg[i+1:]
+            msg=msg[:i]+chr(219-x)+msg[i+1:]
         elif x in range(65, 91):
-            msg = msg[:i]+chr(155-x)+msg[i+1:]
+            msg=msg[:i]+chr(155-x)+msg[i+1:]
     return msg
 
 
@@ -734,19 +772,19 @@ def caesar(msg, shift):
 
     msg: string \\
     shift: shift number"""
-    shift = shift % 26
+    shift=shift % 26
     for i in range(len(msg)):
-        x = ord(msg[i])
+        x=ord(msg[i])
         if x in range(97, 123):  # lowercase letters
             x -= 97
-            num = (x+shift) % 26
+            num=(x+shift) % 26
             num += 97
-            msg = msg[:i]+chr(num)+msg[i+1:]
+            msg=msg[:i]+chr(num)+msg[i+1:]
         elif x in range(65, 91):  # uppercase letters
             x -= 65
-            num = (x+shift) % 26
+            num=(x+shift) % 26
             num += 65
-            msg = msg[:i]+chr(num)+msg[i+1:]
+            msg=msg[:i]+chr(num)+msg[i+1:]
     return msg
 
 
@@ -754,8 +792,8 @@ def to_decimal(num, base, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
     """Converts a number from some base to decimal.
 
     alphabet: 'digits' that the base system uses"""
-    using = str(num)[::-1]
-    res = 0
+    using=str(num)[::-1]
+    res=0
     for i in range(len(using)):
         res += alphabet.find(using[i])*base**i
     return res
@@ -764,16 +802,16 @@ def to_decimal(num, base, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
 def from_decimal(num, base):
     """Converts a number from decimal to a 'base-list', which can be converted into a readable format
     using ```convert_base_list```."""
-    lst = []
+    lst=[]
     while num:
         lst.append(num % base)
-        num = num//base
+        num=num//base
     return lst[::-1]
 
 
 def convert_base_list(lst, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
     """Converts a "base-list" (something like what ```from_decimal``` would output) to a number (in string form)."""
-    res = ''
+    res=''
     for i in lst:
         res += alphabet[i]
     return res
@@ -782,7 +820,7 @@ def convert_base_list(lst, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
 def prod_list(lst):
     """returns the product of all numbers in a list"""
     if lst:
-        res = 1
+        res=1
         for num in lst:
             res *= num
         return res
@@ -804,7 +842,7 @@ def prime_fctr(n):
     if n <= 0:
         raise ValueError("Cannot prime factorize nonpositive integers.")
 
-    res = defaultdict(int)
+    res=defaultdict(int)
 
     # since 2 and 3 don't follow the 6k+-1 rule, we deal with them now
     while not n % 2:
@@ -815,20 +853,20 @@ def prime_fctr(n):
         n //= 3
         res[3] += 1
 
-    i = 5
-    finished = False
+    i=5
+    finished=False
     while i in range(int(math.sqrt(n))+1) and not finished:
         while not n % i:
             n //= i
             res[i] += 1
 
         if n == 1:  # we don't need to check anymore
-            finished = True
+            finished=True
 
         i += (i + 3) % 6
 
     if n != 1:
-        res[int(n)] = 1
+        res[int(n)]=1
 
     return dict(res)
 
@@ -840,7 +878,7 @@ def neat_prim_fctr(n):
 
 def num_fctrs(n):
     """returns the number of factors of a number"""
-    res = 1
+    res=1
     for exp in prime_fctr(n).values():
         res *= (exp+1)
     return res
@@ -851,43 +889,43 @@ def dist(p1, p2):
     dist(p1, p2): distance between two points \\
     dist(p, line) OR dist(line, p): distance between point and line
     """
-    types = set(map(type, (p1, p2)))
+    types=set(map(type, (p1, p2)))
     if types <= point_types() | Point:
         if isinstance(p1, tuple):
-            p1 = complex(*p1)
+            p1=complex(*p1)
         else:
-            p1 = complex(p1)
+            p1=complex(p1)
         if isinstance(p2, tuple):
-            p2 = complex(*p2)
+            p2=complex(*p2)
         else:
-            p2 = complex(p2)
-        x1, y1, x2, y2 = xy_tup(p1)+xy_tup(p2)
+            p2=complex(p2)
+        x1, y1, x2, y2=xy_tup(p1)+xy_tup(p2)
         return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
     else:
         if isinstance(p1, Line):
             if isinstance(p2, tuple):
-                p2 = complex(*p2)
+                p2=complex(*p2)
             else:
-                p2 = complex(p2)
-            p = Point(*xy_tup(p2))
-            line = p1
+                p2=complex(p2)
+            p=Point(*xy_tup(p2))
+            line=p1
         elif isinstance(p2, Line):
             if isinstance(p1, tuple):
-                p1 = complex(*p1)
+                p1=complex(*p1)
             else:
-                p1 = complex(p1)
-            p = Point(*xy_tup(p1))
-            line = p2
+                p1=complex(p1)
+            p=Point(*xy_tup(p1))
+            line=p2
 
-        m = line.slope()
+        m=line.slope()
         if m == None:
-            p_perp = Point(line[0][0], p.y)
+            p_perp=Point(line[0][0], p.y)
         elif m == 0:
-            p_perp = Point(p.x, line[0][1])
+            p_perp=Point(p.x, line[0][1])
         else:
-            x, y = tuple(p)
-            x0 = (line.y_int()-y-x/m)/(-1/m - m)
-            p_perp = Point(x0, line.equation(x0))
+            x, y=tuple(p)
+            x0=(line.y_int()-y-x/m)/(-1/m - m)
+            p_perp=Point(x0, line.equation(x0))
 
         if line.on(p_perp):
             return dist(p, p_perp)
@@ -898,8 +936,8 @@ def dist(p1, p2):
 
 def std_dev(lst):
     """calculates the standard deviation of a data set"""
-    mean = average_list(lst)
-    square_diff = []
+    mean=average_list(lst)
+    square_diff=[]
     for num in lst:
         square_diff.append((num-mean)**2)
     return math.sqrt(average_list(square_diff))
@@ -907,7 +945,7 @@ def std_dev(lst):
 
 def primorial(n):
     """calculates the product of all primes up to ```n```"""
-    res = 1
+    res=1
     for i in range(1, n+1):
         if is_prime(i):
             res *= i
@@ -921,7 +959,7 @@ def h_mean(lst):
 
 def g_mean(lst):
     """geometric mean of a list"""
-    res = 1
+    res=1
     for i in lst:
         res *= i
     return res**(1/len(lst))
@@ -929,7 +967,7 @@ def g_mean(lst):
 
 def totient(n):
     """number of totatives (numbers less than n that are coprime to n)"""
-    res = n
+    res=n
     for fctr in prime_fctr(n):
         res *= 1 - 1/fctr
     return int(res)
@@ -938,7 +976,7 @@ def totient(n):
 def months(numbers=True):
     """returns a list of accepted ways the months can be written
     (including the integers 1 through 12 if ```numbers``` is ```True```) as strings"""
-    lst = [
+    lst=[
         '1', 'january', 'jan', '2', 'february', 'feb', '3', 'march', 'mar', '4', 'april', 'apr',
         '5', 'may', 'may', '6', 'june', 'jun', '7', 'july', 'jul', '8', 'august', 'aug', '9',
         'september', 'sep', '10', 'october', 'oct', '11', 'november', 'nov', '12', 'december', 'dec'
@@ -969,7 +1007,7 @@ def print_attr(obj):
 
 def sum_fctrs(n):
     """sum of factors of a number"""
-    res = 1
+    res=1
     if n == 1:
         return 1
     for fctr, exp in prime_fctr(n).items():
@@ -980,13 +1018,13 @@ def sum_fctrs(n):
 def flatten_gen(obj):
     """flatten a nested object containing lists and/or tuples
     (generator function that yields each element one by one; see also ```flatten```)"""
-    nest = copy.deepcopy(obj)
+    nest=copy.deepcopy(obj)
 
     while nest:
-        ele = nest.pop(0)
+        ele=nest.pop(0)
 
         if isinstance(ele, list) or isinstance(ele, tuple):
-            nest = ele + nest
+            nest=ele + nest
         else:
             yield ele
 
@@ -1006,18 +1044,18 @@ def find_def_class(obj, method):
 def lcm(lst, *args):
     """lcm of a list using ```lcm2```. Also gathers any arguments and adds them to the list."""
     if isinstance(lst, int):
-        lst = [lst]
+        lst=[lst]
     lst += list(args)
-    res = functools.reduce(lambda x, y: x*y//math.gcd(x, y), lst)
+    res=functools.reduce(lambda x, y: x*y//math.gcd(x, y), lst)
     return res
 
 
 def gcd(lst, *args):
     """gcd of a list using the ```math``` module's ```gcd``` function. Also gathers any arguments and adds them to the list."""
     if isinstance(lst, int):
-        lst = [lst]
+        lst=[lst]
     lst += list(args)
-    res = functools.reduce(math.gcd, lst)
+    res=functools.reduce(math.gcd, lst)
     return res
 
 
@@ -1032,14 +1070,14 @@ def n_mod(num, div):
 def opt_mod(num, div):
     """returns nonnegative or negative modulo residue depending on whichever one has a lower absolute value
     (if both equal, returns nonnegative)"""
-    res = num % div
+    res=num % div
     return res if res <= (div/2) else res-div
 
 
 def prime_gen():
     yield 2
     yield 3
-    i = 3
+    i=3
     while True:
         i += 2
         if is_prime(i):
@@ -1055,7 +1093,7 @@ def is_prime(num):
     if num % 6 not in (1, 5) or num == 1:
         return False
 
-    i = 5
+    i=5
     while i in range(int(num**.5)+1):
         if not num % i:
             return False
@@ -1089,7 +1127,7 @@ def pattern_sort(lst, pattern, key=None, reverse=False):
     reverse: whether to sort backwards during initial sort (bool)
     """
     lst.sort(key=key, reverse=reverse)
-    zip_list = zip(lst, pattern)
+    zip_list=zip(lst, pattern)
     return [ele for ele, _ in sorted(zip_list, key=lambda x: x[1])]
 
 
@@ -1099,7 +1137,7 @@ def angle_to_comp(n, deg=False):
     n: angle as float \\
     deg: bool (if ```True```, n is taken to be in degrees, if ```False```, n is taken to be in radians)"""
     if deg:
-        n = math.radians(n)
+        n=math.radians(n)
     return complex(math.cos(n), math.sin(n))
 
 
@@ -1120,24 +1158,8 @@ def string_to_linked(s, split_chars=['→', '-->']):
 
     Returns: linked list node"""
     s += '--> None' if 'None' not in s else ''
-    s = s.replace(' ', '')
-    lst = re.split('|'.join(split_chars), s)
-    return list_to_linked(lst)
-
-
-def list_to_linked(lst):
-    """Reads a list and converts it to a linked list in order.
-
-    lst: list
-
-    Returns: linked list node"""
-    if lst[-1] != None:
-        lst.append(None)
-
-    prev = None
-    for i in range(len(lst)-1, 0, -1):
-        prev = LinkedList(lst[i-1], prev)
-    return prev
+    lst=re.split('|'.join(split_chars), s.replace(' ', ''))
+    return LinkedList(lst)
 
 
 def look_and_say(n):
@@ -1157,12 +1179,12 @@ def look_and_say(n):
     if n == 1:
         return 1
     else:
-        s = str(look_and_say(n-1))
-        res = ''
-        i = 0
+        s=str(look_and_say(n-1))
+        res=''
+        i=0
         while i in range(len(s)):
-            count = 1
-            num = s[i]
+            count=1
+            num=s[i]
             while i in range(len(s)-1) and s[i] == s[i+1]:
                 count += 1
                 i += 1
@@ -1175,19 +1197,19 @@ def alt_case(string, lower_first=True):
     """Returns the string with alternating upper and lowercase characters.
 
     lower_first: if True, first character is lowercase; if False, first character is uppercase"""
-    string = string.lower()
+    string=string.lower()
     for i in range(len(string)):
         if bool(i % 2) == lower_first:
-            string = string[: i] + string[i].upper() + string[i+1:]
+            string=string[: i] + string[i].upper() + string[i+1:]
     return string
 
 
 def sort_alpha(lst):
     """Sorts a list of integers in abecedarian (alphabetical) order."""
-    engine = inflect.engine()
-    res = []
+    engine=inflect.engine()
+    res=[]
     for num in lst:
-        word = engine.number_to_words(num)
+        word=engine.number_to_words(num)
         res.append((word, num))
     res.sort()
     return [ele for _, ele in res]
@@ -1212,18 +1234,18 @@ def dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_comma
         def represent(s):
             return repr(s) if use_repr else str(s)
 
-        comma_char = ',' if use_commas and len(d.values())-1 else ''
+        comma_char=',' if use_commas and len(d.values())-1 else ''
 
-        sp = ' '*indent*(begin_indent+(tab_braces and use_braces))
+        sp=' '*indent*(begin_indent+(tab_braces and use_braces))
 
-        res = ''
+        res=''
         if use_braces:
             res += ' '*indent*begin_indent + '{' + '\n'
 
-        i = 1
+        i=1
         for key, val in d.items():
             if len(d) == i:
-                comma_char = ''
+                comma_char=''
             if type(val) not in dict_types() or not deep:
                 res += sp + represent(key) + ': ' + \
                     represent(val) + comma_char + '\n'
@@ -1232,19 +1254,19 @@ def dict_neat(d, use_repr=True, deep=True, indent=4, use_braces=False, use_comma
                     _dict_neat(val, use_repr, deep, indent,
                                use_braces, use_commas, tab_braces, comma_braces, begin_indent+1) + '\n'
                 if use_braces:
-                    res = res[:-1] + comma_char + res[-1]
+                    res=res[:-1] + comma_char + res[-1]
             i += 1
 
         if use_braces:
-            ending_brace = '}' + ','*comma_braces
+            ending_brace='}' + ','*comma_braces
             res += ' '*indent*begin_indent + ending_brace + '\n'
 
         return res[:-1]
 
-    res = _dict_neat(d, use_repr, deep, indent,
+    res=_dict_neat(d, use_repr, deep, indent,
                      use_braces, use_commas, tab_braces, comma_braces, begin_indent)
     if not use_braces:
-        comma_braces = False
+        comma_braces=False
     return res[:-1] if comma_braces else res
 
 
@@ -1254,7 +1276,7 @@ def rand_color(start=0, stop=256**3-1):
 
 
 def opp_color(col):
-    col = convert_color(col, int)
+    col=convert_color(col, int)
     return convert_color(256**3-1 - col, tuple)
 
 
@@ -1277,29 +1299,29 @@ def turtle_gif(func, args, kwargs, fps=10, fname=None, path=None, temp_fname=Non
     tr: Turtle object
     """
     if tr == None:
-        tr = turtle.Turtle()
+        tr=turtle.Turtle()
 
-    func_name = func.__name__
+    func_name=func.__name__
     if fname == None:
-        fname = func_name
+        fname=func_name
     if temp_fname == None:
-        temp_fname = fname
+        temp_fname=fname
 
     if path == None:
-        path = os.getcwd()
+        path=os.getcwd()
 
     if temp_path == None:
-        temp_path = os.getcwd()
+        temp_path=os.getcwd()
 
-    path, temp_path = format_input_path(path), format_input_path(temp_path)
+    path, temp_path=format_input_path(path), format_input_path(temp_path)
 
-    running = True  # bool for whether program is running
-    counter = 1  # the number for the temp file name
-    frames = []  # list of images
+    running=True  # bool for whether program is running
+    counter=1  # the number for the temp file name
+    frames=[]  # list of images
 
     def save():
         nonlocal counter
-        file_str = "%s%d.eps" % (temp_path + temp_fname, counter)  # file name
+        file_str="%s%d.eps" % (temp_path + temp_fname, counter)  # file name
         tr.getcanvas().postscript(file=file_str)  # save the file
         frames.append(file_str)
 
@@ -1313,11 +1335,11 @@ def turtle_gif(func, args, kwargs, fps=10, fname=None, path=None, temp_fname=Non
     # start the program (half-second leader)
     tr.ontimer(func(*args, **kwargs))
 
-    running = False
+    running=False
 
     for i in range(len(frames)):
-        im = frames[i]
-        frames[i] = Image.open(im)
+        im=frames[i]
+        frames[i]=Image.open(im)
 
         os.remove(im)
 
@@ -1329,7 +1351,7 @@ def format_input_path(path):
     if path[-1] != '/':
         path += '/'
     if path[0] != '/':
-        path = '/' + path
+        path='/' + path
     return path
 
 
@@ -1457,9 +1479,9 @@ def morse_to_char():
 
 def encode_morse(msg):
     """Returns the Morse code version of a string."""
-    lst = list(msg)
-    encoder = char_to_morse()
-    res = []
+    lst=list(msg)
+    encoder=char_to_morse()
+    res=[]
     for char in lst:
         res.append(encoder[char.upper()])
     return ' '.join(res)
@@ -1470,9 +1492,9 @@ def decode_morse(msg, uppercase=True):
 
     uppercase: if True, returns uppercase letters; if False, lowercase
     """
-    lst = msg.split()
-    decoder = morse_to_char()
-    res = []
+    lst=msg.split()
+    decoder=morse_to_char()
+    res=[]
     for beep in lst:
         res.append(decoder[beep])
     return ''.join(res)
@@ -1497,7 +1519,7 @@ def polygon(n, r, tr=None):
     centered at the turtle's current position. ```1``` and ```2``` both draw a line with length \
     ```2r```."""
     if tr == None:
-        tr = turtle.Turtle()
+        tr=turtle.Turtle()
 
     if n == 0:
         tr.rt(90)
@@ -1516,21 +1538,21 @@ def polygon(n, r, tr=None):
             tr.pu()
             tr.bk(r)
             tr.pd()
-            n = 2
-            s = 2*r
+            n=2
+            s=2*r
             tr.fd(2*r)
             tr.pu()
             tr.bk(r)
             tr.pd()
         else:
-            ang = 90/n
+            ang=90/n
 
             tr.lt(ang)
             tr.pu()
             tr.bk(r)
             tr.pd()
             tr.rt(ang)
-            s = 2*r*math.sin(math.radians(2*ang))
+            s=2*r*math.sin(math.radians(2*ang))
 
             for i in range(n):
                 tr.fd(s)
@@ -1555,7 +1577,7 @@ def interior(n):
 
 def factors(n):
     """Returns a list of the factors of n."""
-    res = set()
+    res=set()
     res |= {1, n}
     for i in range(2, int(n**.5)+1):
         if not n % i:
@@ -1567,8 +1589,8 @@ def factors(n):
 
 def totatives(n):
     """All numbers less than n coprime to n."""
-    res = set()
-    mx = totient(n)
+    res=set()
+    mx=totient(n)
     for i in range(n):
         if math.gcd(i, n) == 1:
             res.add(i)
@@ -1580,7 +1602,7 @@ def order(n, div):
     """Returns the order of ```n``` mod ```div```."""
     if math.gcd(n, div) != 1:
         raise ValueError("n must be coprime to the mod.")
-    i = 1
+    i=1
     while True:
         if n**i % div == 1:
             return i
@@ -1589,7 +1611,7 @@ def order(n, div):
 
 def mod_powers(pwr, div):
     """Prints all possible residues when raised to ```pwr``` mod ```div```."""
-    res = set()
+    res=set()
     for i in range(div):
         res.add(pow(i, pwr, div))
     return res
@@ -1597,14 +1619,14 @@ def mod_powers(pwr, div):
 
 def evens():
     """Generator function yielding even numbers."""
-    i = 0
+    i=0
     while True:
         yield (i := i+2)
 
 
 def odds():
     """Generator function yielding odd numbers."""
-    i = -1
+    i=-1
     while True:
         yield (i := i+2)
 
@@ -1613,21 +1635,21 @@ def sum_of_factorial(n, used=None):
     """Returns the set of distinct numbers whose factorials add up to ```n```.
     If there is no such set, returns ```None```.
 
-    used: if not ```None```, is a set containing that cannot be in the final result"""
+    used: if not ```None```, is a set containing numbers that cannot be in the final result"""
     assert isinstance(n, int) and n > 0, "n must be a positive integer."
 
-    finished = False
-    num, fctrl = 1, 1
+    finished=False
+    num, fctrl=1, 1
 
     if used == None:
-        used = set()
+        used=set()
 
     while not finished:
         fctrl *= num
         if num not in used and fctrl == n:
             return {num}
         elif fctrl > n:
-            finished = True
+            finished=True
             num -= 1
         else:
             num += 1
@@ -1650,7 +1672,7 @@ def num_types():
 
 def mat_neat(mat):
     """Neat representation of a 2D matrix."""
-    res = ''
+    res=''
     for row in mat:
         res += ' ' + repr(row) + ',\n'
     return '[' + res[1:-2] + ']'
@@ -1661,7 +1683,7 @@ def powerset(s, as_set=False):
 
     as_set: If ```True```, returns set of frozensets, otherwise
             returns list of sets."""
-    res = []
+    res=[]
     for size in range(len(s)+1):
         for ele in map(frozenset if as_set else set, itertools.combinations(s, size)):
             res.append(ele)
@@ -1701,8 +1723,8 @@ def lists_from_options(poss, size, repetitions=True):
     if not size:
         return [[]]
 
-    res = []
-    prev = lists_from_options(poss, size-1)
+    res=[]
+    prev=lists_from_options(poss, size-1)
 
     for lst in prev:
         if repetitions:
@@ -1734,7 +1756,7 @@ def dict_types():
 
 def column(matrix, col):
     """Returns a column from a matrix given the (0-indexed) column number."""
-    res = []
+    res=[]
     for r in range(len(matrix)):
         res.append(matrix[r][col])
     return res
@@ -1744,10 +1766,10 @@ def pairings(items):
     if len(items) == 0:
         return [[]]
 
-    res = []
+    res=[]
     for i in range(1, len(items)):
-        remaining = items[1:]
-        cur = [(items[0], items[i])]
+        remaining=items[1:]
+        cur=[(items[0], items[i])]
         remaining.pop(i-1)
         for pairing in pairings(remaining):
             res.append(pairing+cur)
@@ -1773,25 +1795,25 @@ def solve_mod_equations(*args):
 
     Returns a tuple ```(b, q)```, where x == b (mod q) is the general solution of the system."""
     def solve_mod_equation(t1, t2):
-        t1, t2 = sorted((t1, t2), key=lambda x: x[1])
-        a, p, b, q = t1+t2
+        t1, t2=sorted((t1, t2), key=lambda x: x[1])
+        a, p, b, q=t1+t2
         return (q*mod_inv(q, p)*(a-b) + b) % (q*p), q*p
 
     return functools.reduce(lambda res, div: solve_mod_equation(res, div), args)
 
 
 def alphabet(lower=True):
-    res = ''.join((chr(i) for i in range(65, 91)))
+    res=''.join((chr(i) for i in range(65, 91)))
     return res.lower() if lower else res
 
 
 def weighted_random_choice(choice_info):
-    x = list(choice_info.items())
+    x=list(choice_info.items())
 
-    num = random.random()
+    num=random.random()
 
-    csum = 0
-    i = 0
+    csum=0
+    i=0
     while csum < num:
         csum += x[i][1]
         i += 1
@@ -1800,7 +1822,7 @@ def weighted_random_choice(choice_info):
 
 
 def neighbors(mat, r, c, diagonals=True):
-    res = []
+    res=[]
     for i in range(-1, 2):
         for j in range(-1, 2):
             if (diagonals or not(i and j)) and r+i in range(len(mat)) and c+j in range(len(mat[0])) and (i or j):
@@ -1810,18 +1832,18 @@ def neighbors(mat, r, c, diagonals=True):
 
 
 def rotate(mat, deg):
-    res = copy(mat)
-    size = len(mat)
+    res=copy(mat)
+    size=len(mat)
     if deg == 90:
-        res = rotate(mat, 180)
-        res = rotate(res, 270)
+        res=rotate(mat, 180)
+        res=rotate(res, 270)
     elif deg == 180:
-        res = reflect(mat, 'x')
-        res = reflect(res, 'y')
+        res=reflect(mat, 'x')
+        res=reflect(res, 'y')
     elif deg == 270:
         for r in range(size):
             for c in range(size):
-                res[c][r] = mat[r][-1-c]
+                res[c][r]=mat[r][-1-c]
     elif deg == 0:
         return mat
     else:
@@ -1834,7 +1856,7 @@ def reflect(mat, axis):
     if axis == 'x':
         return mat[::-1]
     elif axis == 'y':
-        res = []
+        res=[]
         for row in mat:
             res.append(row[::-1])
     else:
@@ -1845,13 +1867,13 @@ def reflect(mat, axis):
 
 def convert_color(col_in, mode=tuple):
     if type(col_in) == tuple:
-        col = 256**2*col_in[0] + 256*col_in[1] + col_in[2]
+        col=256**2*col_in[0] + 256*col_in[1] + col_in[2]
     elif type(col_in) == str:
-        col_in = col_in.lstrip('#')
-        col_in = int(col_in[:2], 16), int(col_in[2:4], 16), int(col_in[4:], 16)
-        col = 256**2*int(col_in[0]) + 256*int(col_in[1]) + int(col_in[2])
+        col_in=col_in.lstrip('#')
+        col_in=int(col_in[:2], 16), int(col_in[2:4], 16), int(col_in[4:], 16)
+        col=256**2*int(col_in[0]) + 256*int(col_in[1]) + int(col_in[2])
     elif type(col_in) == int:
-        col = col_in
+        col=col_in
     else:
         raise TypeError("Colors must be tuples, strings, or integers, not '%s'."
                         % type(col_in).__name__)
@@ -1871,5 +1893,5 @@ def lucas(n):
     """returns the nth Lucas number,
     where the Lucas sequence is ```L0 = 2, L1 = 1, L2 = 3, L3 = 4, ...```
     (sum of previous two terms)"""
-    phi = (1 + math.sqrt(5))/2
+    phi=(1 + math.sqrt(5))/2
     return phi**n + (1-phi)**n
