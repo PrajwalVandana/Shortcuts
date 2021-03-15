@@ -1942,7 +1942,7 @@ def kmeans(pts, k):
 
 
 def swatch(col):
-    """Returns a image filled with the color."""
+    """Returns an image filled with the color."""
     im = Image.new('RGB', (100, 100), col)
     draw = ImageDraw.Draw(im)
     draw.text((0, 0), str(col)+'\n'+convert_color(col, str), opp_color(col))
