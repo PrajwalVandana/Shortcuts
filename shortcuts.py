@@ -8,8 +8,9 @@ import random
 import re
 import turtle
 from collections import UserDict, UserList, defaultdict, Counter
-
 import inflect
+
+from typing import Iterable, Set, Tuple
 from PIL import Image, ImageDraw
 
 
@@ -221,7 +222,7 @@ class Network:
             # drawing the paths
             for stop in self.paths[node]:
                 stop_pos = node_positions[stop]
-                line = Line(pos, stop_pos)
+                line = Vector(pos, stop_pos)
 
                 if line not in drawn_lines:
                     drawn_lines.add(line)
@@ -513,35 +514,36 @@ class Point:
         other = Point(other)
         return self*self.dot(other)/abs(self)**2
 
+    def draw(self, tr=None):
+        if tr is None:
+            tr = turtle.Turtle()
 
-class Line:
-    """Represents a line segment in the Cartesian plane."""
+        orig = tr.pos()
+
+        tr.pu()
+        tr.goto(self)
+        tr.shape('circle')
+        tr.stamp()
+        tr.goto(orig)
+        tr.pd()
+
+
+class Vector:
+    """Represents a vector in the Cartesian plane."""
 
     def __init__(self, p1, p2):
-        """Note that ```Line(start, stop)``` == ```Line(stop, start)```; ```start``` automatically
-        becomes the endpoint with lowest x-coord."""
-
-        if type(p1) not in {Point} | point_types():
-            raise TypeError("Type '%s' not a valid point." % type(p1).__name__)
-        elif type(p2) not in {Point} | point_types():
-            raise TypeError("Type '%s' not a valid point." % type(p2).__name__)
-
-        p1 = Point(p1)
-        p2 = Point(p2)
-
-        lst = sorted([p1, p2], key=lambda p: (p.x, p.y))
-
-        self.start = lst[0]
-        self.stop = lst[1]
+        self.start = p1
+        self.stop = p2
 
     def angle(self):
-        """Angle ```Line(a, b)``` (with b.y > a.y) makes with ```Line(a, x)``` \
-        such that ```Line(a, x)``` is parallel to the x-axis."""
+        """Angle the vector makes with the x-axis."""
         slope = self.slope()
         if slope != None:
             ang = math.degrees(math.atan(slope))
-            if ang < 0:
+            if self.start.x > self.stop.x:
                 ang += 180
+            if ang < 0:
+                ang += 360
             return ang
         else:
             return 90
@@ -556,7 +558,7 @@ class Line:
         return repr(self)
 
     def __repr__(self):
-        return 'Line((%f, %f), (%f, %f))' % (self.start.x, self.start.y, self.stop.x, self.stop.y)
+        return 'Vector((%f, %f), (%f, %f))' % (self.start.x, self.start.y, self.stop.x, self.stop.y)
 
     def __getitem__(self, i):
         if i == 1:
@@ -565,7 +567,7 @@ class Line:
             return self.start
         else:
             raise IndexError(
-                "Index for a Line object must be 0 or 1, not '%s'." % str(i))
+                "Index for a Vector object must be 0 or 1, not '%s'." % str(i))
 
     def __setitem__(self, i, val):
         if i == 1:
@@ -574,10 +576,7 @@ class Line:
             self.start = val
         else:
             raise IndexError(
-                "Index for a Line object must be 0 or 1, not '%s'." % str(i))
-
-    def __iter__(self):
-        return iter(self[0], self[1])
+                "Index for a Vector object must be 0 or 1, not '%s'." % str(i))
 
     def equation(self, x):
         if self.slope() is None:
@@ -588,10 +587,13 @@ class Line:
         """Returns whether ```p``` is on the line."""
         if type(p) == complex:
             p = xy_tup(p)
+
+        e1, e2 = self.endpoints()
+
         if self.slope() != None:
-            return self.equation(p[0]) == p[1] and self.start[0] < p[0] < self.stop[0]
+            return self.equation(p[0]) == p[1] and e1[0] < p[0] < e2[0]
         else:
-            return p[0] == self.start.x and self.start[1] < p[1] < self.stop[1]
+            return p[0] == self.start.x and e1[1] < p[1] < e2[1]
 
     def y_int(self):
         if self.slope() != None:
@@ -613,6 +615,24 @@ class Line:
         tr.goto(self.stop)
         tr.pu()
         tr.goto(orig)
+        tr.pd()
+
+    def endpoints(self):
+        """Returns a tuple `(p1, p2)`, where p1 is the endpoint with the lower
+        x-coord."""
+        return tuple(sorted([self.start, self.stop], key=lambda p: p.x))
+
+    def magnitude(self):
+        return math.sqrt((self.stop.x-self.start.x)**2+(self.stop.y-self.start.y)**2)
+
+    def normalized(self):
+        return self.__class__(Point(0, 0), self.stop-self.start)
+
+    def angle_with(self, other):
+        """Angle the vector makes with `other`."""
+        other = Vector(*other)
+        p1, p2 = self.normalized().stop, other.normalized().stop
+        return p1.dot(p2)/(abs(p1)*abs(p2))
 
 
 def convert_point_input(string, sep=' '):
@@ -903,14 +923,14 @@ def dist(p1, p2):
         x1, y1, x2, y2 = xy_tup(p1)+xy_tup(p2)
         return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
     else:
-        if isinstance(p1, Line):
+        if isinstance(p1, Vector):
             if isinstance(p2, tuple):
                 p2 = complex(*p2)
             else:
                 p2 = complex(p2)
             p = Point(*xy_tup(p2))
             line = p1
-        elif isinstance(p2, Line):
+        elif isinstance(p2, Vector):
             if isinstance(p1, tuple):
                 p1 = complex(*p1)
             else:
@@ -1948,3 +1968,46 @@ def swatch(col):
     draw.text((0, 0), str(col)+'\n'+convert_color(col, str), opp_color(col))
 
     return im
+
+
+def hull(points: Iterable[Point]):
+    """Finds the convex hull of a set of points.
+
+    points: An iterable of `Point`s."""
+    # find first point
+    p1 = Point(float('inf'), float('inf'))
+    for p in points:
+        if p.x < p1.x or p.x == p1.x and p.y < p1.y:
+            p1 = p
+
+    res = [p1]
+
+    # find second point
+    p2, a2 = None, None
+    for p in points:
+        if p != p1:
+            a = 270-Vector(p1, p).angle()
+            if a < 0:
+                a += 360
+
+            if p2 is None or a > a2:
+                p2 = p
+                a2 = a
+
+    res.append(p2)
+
+    # find all the next points
+    while res[0] != res[-1]:
+        last_line = Vector(res[-2], res[-1])
+        next_point, next_angle = p1, last_line.angle_with(Vector(res[-1], p1))
+        for p in points:
+            if p != res[-1]:
+                a = last_line.angle_with(Vector(res[-1], p))
+
+                if a > next_angle:
+                    next_point = p
+                    next_angle = a
+
+        res.append(next_point)
+
+    return res
