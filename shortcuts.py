@@ -15,22 +15,10 @@ from PIL import Image, ImageDraw
 
 
 class LinkedList:
-    def __init__(self, constructor, nxt=None):
+    def __init__(self, val, nxt=None):
         """Initializes a linked list."""
-        if isinstance(constructor, (list, tuple)):
-            if constructor[-1] != None:
-                constructor.append(None)
-
-            node = None
-            for i in range(len(constructor)-1, 0, -1):
-                node = LinkedList(constructor[i-1], node)
-            self.val, self.next = node.val, node.next
-        elif type(constructor) == int:
-            self.val = constructor
-            self.next = nxt
-        else:
-            raise TypeError(
-                "Invalid constructor type '%s' for LinkedList: must be a list/tuple-like object or an int.")
+        self.val = val
+        self.next = nxt
 
     def __repr__(self):
         """Returns a string representation of the linked list."""
@@ -57,59 +45,13 @@ class LinkedList:
         res.append(None)
         yield from res
 
-    def list_to_linked(lst):
-        """Reads a list and converts it to a linked list in order.
-
-        lst: list
-
-        Returns: linked list node"""
-        if lst[-1] != None:
-            lst.append(None)
-
-        prev = None
+    @classmethod
+    def from_iter(cls, lst):
+        """Returns a LinkedList object from a list or tuple of objects."""
+        node = None
         for i in range(len(lst)-1, 0, -1):
-            prev = LinkedList(lst[i-1], prev)
-        return prev
-
-
-class Tree:
-    def __init__(self, val, left=None, right=None):
-        """Initializes a tree."""
-        self.val = val
-        self.left = left
-        self.right = right
-
-    def __contains__(self, val):
-        """Defining how the ```in``` operator should work with a Tree object."""
-        return val == self.val or (type(self.left) == type(self) and val in self.left) or \
-            (type(self.right) == type(self) and val in self.right)
-
-    def __iter__(self):
-        """Returns an iterator of attribute-value pairs for ```self.val```, ```self.left```,
-        and ```self.right```.
-
-        Ex: list(iter(tree)) = [(val, 1), (left, t2), (right, t3)], where
-        tree, t2, t3 are Tree objects."""
-        lst = list(vars(self).items())
-        for i in range(len(lst)):
-            if type(lst[i][1]) == type(self):
-                lst[i] = (lst[i][0], dict(lst[i][1]))
-        yield from lst
-
-    def __repr__(self):
-        """Returns a string representation of the linked list."""
-        return str(dict(self))
-
-    def values(self):
-        """A list of values in the tree."""
-        res = []
-        for val in dict(self).values():
-            if val != None:
-                if type(val) == dict:
-                    res += val.values()
-                else:
-                    res.append(val)
-        return res
+            node = LinkedList(lst[i-1], node)
+        return node
 
 
 class Network:
@@ -121,9 +63,11 @@ class Network:
         constructor: can be a list or dictionary
             if list, then constructor should be a list of 2-tuples from one
                 node to another represented as start-end pairs, e.g. (1, 2);
-                nodes with no paths from them should have an empty list as a value
+                nodes with no paths from them should have an empty list as a
+                value
             if dict, then constructor should be a dictionary where each key
-                contains as values a list of all nodes n for which there is a path to n
+                contains as values a list of all nodes n for which there is a
+                path to n
         """
         self.paths = {}
         if type(constructor) == list:
@@ -136,10 +80,12 @@ class Network:
                 self.__class__, repr(type(constructor).__name__)))
 
     def __contains__(self, val):
-        """The expression ```path in network``` will evaluate to ```True``` if there is a path from the first
-        element of ```path``` to the second. ```path``` should be a tuple with 2 elements.
+        """The expression ```path in network``` will evaluate to ```True``` if
+        there is a path from the first  element of ```path``` to the second.
+        ```path``` should be a tuple with 2 elements.
 
-        The expression ```int in network``` will evaluate to ```True``` if that node exists."""
+        The expression ```int in network``` will evaluate to ```True``` if that
+        node exists."""
         if type(val) == int:
             return val in self.paths
         elif type(val) == tuple:
@@ -149,7 +95,8 @@ class Network:
                             repr(type(val).__name__))
 
     def path_list(self):
-        """Returns a list of all paths as tuples in the form ```(start, stop)```."""
+        """Returns a list of all paths as tuples in the form
+        ```(start, stop)```."""
         res = []
         for start, stops in self.paths.items():
             res += [(start, stop) for stop in stops]
@@ -168,19 +115,21 @@ class Network:
         """Draws a turtle drawing depicting the Network object.
 
         r: how far the nodes are drawn from the center of the screen \\
-        node_shape: the number of sides of the regular polygon that represents the node; \
-        ```0``` is a circle, ```1``` and ```2``` are lines of length 2*node_size \\
+        node_shape: the number of sides of the regular polygon that represents \
+        the node; ```0``` is a circle, ```1``` and ```2``` are lines of length \
+        2*node_size \\
         node_size: circumradius of each node \\
-        node_rot: rotation of the node in degrees, where 0 is the polygon laying flat on a base \\
-        node_positions: dictionary mapping from nodes to locations to draw each node, as a tuple, \
-        ```Point``` object, or complex number; if ```None```, nodes will be drawn \
-        on the circle with radius ```r``` \\
+        node_rot: rotation of the node in degrees, where 0 is the polygon
+        laying flat on a base \\
+        node_positions: dictionary mapping from nodes to locations to draw each \
+        node, as a tuple, ```Point``` object, or complex number; if ```None```, \
+        nodes will be drawn on the circle with radius ```r``` \\
         labeling: if ```True```, labels each node \\
         label_font: passed as the ```font``` argument to ```tr.write``` \\
         labels: a dictionary mapping from nodes to their labels \\
-        label_relpos: a function for labeling that should take in a ```Point``` object and \
-        return a ```Point``` object; this function will be run on each node's position to decide \
-        where to put that node's label
+        label_relpos: a function for labeling that should take in a ```Point``` \
+        object and return a ```Point``` object; this function will be run on \
+        each node's position to decide where to put that node's label \\
         tr: Turtle object
         """
         if tr is None:
@@ -201,7 +150,8 @@ class Network:
                         "'%s' is not a valid type for a point." % typ.__name__)
                 node_positions[node] = Point(pos)
 
-        drawn_lines = set()  # contains lines that are already drawn, to avoid drawing over
+        # contains lines that are already drawn, to avoid drawing over
+        drawn_lines = set()
         for node, pos in node_positions.items():
             tr.pu()
             tr.goto(pos)
@@ -222,7 +172,7 @@ class Network:
             # drawing the paths
             for stop in self.paths[node]:
                 stop_pos = node_positions[stop]
-                line = Vector(pos, stop_pos)
+                line = Line(pos, stop_pos)
 
                 if line not in drawn_lines:
                     drawn_lines.add(line)
@@ -328,8 +278,9 @@ class FuncWithString:
         return repr(self.func)
 
     def attributes(self):
-        """Returns the __dict__ of self.func, i.e. the function, equivalent to ```self.func.__dict__```.
-        To get the attributes of the FuncWithString object, use ```self.__dict__```."""
+        """Returns the `__dict__` of `self.func`, i.e. the function, equivalent \
+        to `self.func.__dict__`. To get the attributes of the `FuncWithString` \
+        object, use `self.__dict__`."""
         return self.func.__dict__
 
 
@@ -475,8 +426,9 @@ class Point:
         return poss
 
     def angle(self):
-        """Angle the point makes at the intersection of the line to the origin and
-        the positive x-axis (going counterclockwise from the positive x-axis)."""
+        """Angle the point makes at the intersection of the line to the origin
+        and the positive x-axis (going counterclockwise from the positive
+        x-axis) in degrees."""
         quads = self.quadrants()
         norm = self.normal()
 
@@ -528,15 +480,15 @@ class Point:
         tr.pd()
 
 
-class Vector:
-    """Represents a vector in the Cartesian plane."""
+class Line:
+    """Represents a line segment in the Cartesian plane."""
 
     def __init__(self, p1, p2):
         self.start = p1
         self.stop = p2
 
     def angle(self):
-        """Angle the vector makes with the x-axis."""
+        """Angle the line makes with the x-axis."""
         slope = self.slope()
         if slope != None:
             ang = math.degrees(math.atan(slope))
@@ -558,7 +510,7 @@ class Vector:
         return repr(self)
 
     def __repr__(self):
-        return 'Vector((%f, %f), (%f, %f))' % (self.start.x, self.start.y, self.stop.x, self.stop.y)
+        return 'Line((%f, %f), (%f, %f))' % (self.start.x, self.start.y, self.stop.x, self.stop.y)
 
     def __getitem__(self, i):
         if i == 1:
@@ -567,7 +519,7 @@ class Vector:
             return self.start
         else:
             raise IndexError(
-                "Index for a Vector object must be 0 or 1, not '%s'." % str(i))
+                "Index for a Line object must be 0 or 1, not '%s'." % str(i))
 
     def __setitem__(self, i, val):
         if i == 1:
@@ -576,7 +528,7 @@ class Vector:
             self.start = val
         else:
             raise IndexError(
-                "Index for a Vector object must be 0 or 1, not '%s'." % str(i))
+                "Index for a Line object must be 0 or 1, not '%s'." % str(i))
 
     def equation(self, x):
         if self.slope() is None:
@@ -629,22 +581,10 @@ class Vector:
         return self.__class__(Point(0, 0), self.stop-self.start)
 
     def angle_with(self, other):
-        """Angle the vector makes with `other`."""
-        other = Vector(*other)
+        """Angle the line makes with `other`."""
+        other = Line(*other)
         p1, p2 = self.normalized().stop, other.normalized().stop
         return p1.dot(p2)/(abs(p1)*abs(p2))
-
-
-def convert_point_input(string, sep=' '):
-    """converts separated coordinate points, e.g. (1,2) to a list of tuples
-
-    sep: character separating each set of points"""
-    lst = string.split(sep)
-    for i in range(len(lst)):
-        tup = tuple(lst[i].split(','))
-        res = float(tup[0][1:]), float(tup[1][:-1])
-        lst[i] = res
-    return lst
 
 
 def fibonacci(n):
@@ -777,7 +717,8 @@ def median(lst, floor=True):
 
 
 def atbash(msg):
-    """encrypts a message using Atbash (flip the alphabet, so 'a' becomes 'z', 'b' becomes 'y', etc.)"""
+    """encrypts a message using Atbash (flip the alphabet, so 'a' becomes 'z',
+    'b' becomes 'y', etc.)"""
     for i in range(len(msg)):
         x = ord(msg[i])
         if x in range(97, 123):
@@ -923,14 +864,14 @@ def dist(p1, p2):
         x1, y1, x2, y2 = xy_tup(p1)+xy_tup(p2)
         return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
     else:
-        if isinstance(p1, Vector):
+        if isinstance(p1, Line):
             if isinstance(p2, tuple):
                 p2 = complex(*p2)
             else:
                 p2 = complex(p2)
             p = Point(*xy_tup(p2))
             line = p1
-        elif isinstance(p2, Vector):
+        elif isinstance(p2, Line):
             if isinstance(p1, tuple):
                 p1 = complex(*p1)
             else:
@@ -1034,25 +975,6 @@ def sum_fctrs(n):
     for fctr, exp in prime_fctr(n).items():
         res *= (fctr**(exp+1)-1)/(fctr-1)
     return int(res)
-
-
-def flatten_gen(obj):
-    """flatten a nested object containing lists and/or tuples
-    (generator function that yields each element one by one; see also ```flatten```)"""
-    nest = copy.deepcopy(obj)
-
-    while nest:
-        ele = nest.pop(0)
-
-        if isinstance(ele, list) or isinstance(ele, tuple):
-            nest = ele + nest
-        else:
-            yield ele
-
-
-def flatten(nest):
-    """flatten a nested object containing lists and/or tuples"""
-    return nest.__class__(flatten_gen(nest))
 
 
 def find_def_class(obj, method):
@@ -1856,6 +1778,16 @@ def neighbors(mat, r, c, diagonals=True):
     return res
 
 
+def neighbor_positions(mat, r, c, diagonals=True):
+    res = []
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            if (diagonals or not(i and j)) and r+i in range(len(mat)) and c+j in range(len(mat[0])) and (i or j):
+                res.append((r+i, c+j))
+
+    return res
+
+
 def rotate(mat, deg):
     res = copy(mat)
     size = len(mat)
@@ -1923,7 +1855,7 @@ def lucas(n):
 
 
 def kmeans(pts, k):
-    """Implementation of the `k`-means algorithm.
+    """Implementation of the k-means clustering algorithm.
 
     https://en.wikipedia.org/wiki/K-means_clustering
     """
@@ -1986,7 +1918,7 @@ def hull(points: Iterable[Point]):
     p2, a2 = None, None
     for p in points:
         if p != p1:
-            a = 270-Vector(p1, p).angle()
+            a = 270-Line(p1, p).angle()
             if a < 0:
                 a += 360
 
@@ -1998,11 +1930,11 @@ def hull(points: Iterable[Point]):
 
     # find all the next points
     while res[0] != res[-1]:
-        last_line = Vector(res[-2], res[-1])
-        next_point, next_angle = p1, last_line.angle_with(Vector(res[-1], p1))
+        last_line = Line(res[-2], res[-1])
+        next_point, next_angle = p1, last_line.angle_with(Line(res[-1], p1))
         for p in points:
             if p != res[-1]:
-                a = last_line.angle_with(Vector(res[-1], p))
+                a = last_line.angle_with(Line(res[-1], p))
 
                 if a > next_angle:
                     next_point = p
@@ -2011,3 +1943,17 @@ def hull(points: Iterable[Point]):
         res.append(next_point)
 
     return res
+
+
+def list_to_tuple_wrapper(func):
+    """Converts any arguments of a function that are passed as a list as well
+    as the return value (if it's a list) to a tuple.
+
+    An example use-case is to enable caching as implemented by
+    `@functools.cache`."""
+    def wrapper(*args):
+        result = func(*[(tuple(x) if type(x) == list else x) for x in args])
+        result = tuple(result) if type(result) == list else result
+        return result
+
+    return wrapper
